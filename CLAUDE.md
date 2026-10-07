@@ -21,7 +21,7 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 | DB | Supabase Postgres — 서버에서 `@supabase/supabase-js` (secret key), 브라우저는 Realtime 신호만 |
 | 검증 | zod 4 (화면·Server Action 공용 `src/lib/trips/schema.ts`) |
 | 테스트 | Vitest 5, PGlite(마이그레이션 검증) |
-| 배포 | Vercel — GitHub 연동(PR → 미리보기, `main` → 프로덕션), 함수 리전 서울 `icn1`(`vercel.json`, Supabase 와 같은 지역) |
+| 배포 | Vercel — GitHub 연동(PR → 미리보기, `main` → 프로덕션), 함수 리전 서울 `icn1`(`vercel.json`, Supabase 와 같은 지역). 연결 절차: [docs/deploy-vercel.md](docs/deploy-vercel.md) |
 | CI | GitHub Actions `.github/workflows/ci.yml` — PR·`main` push 마다 lint·typecheck·test·build (DB·비밀 키 없이) |
 | 저장소 | **공개** GitHub `hyung-rae/nbbang-lab` |
 | 패키지 | npm (`.claude/settings.json` 허용 목록이 npm 기준) |
@@ -44,6 +44,7 @@ src/components/     화면 — trip/(여행 화면 탭·시트) · game/ · form
 src/lib/            도메인 순수 함수(domain/) · 서버 데이터 계층(trips/·supabase/·realtime/) · site.ts
 supabase/           마이그레이션 SQL · 스키마 테스트
 .github/workflows/  CI
+docs/               사람이 따라 하는 절차 문서 (Vercel 연결 등)
 ```
 
 디렉터리별 세부는 각 `CLAUDE.md`: [src/lib](src/lib/CLAUDE.md) · [src/components](src/components/CLAUDE.md) · [supabase](supabase/CLAUDE.md).
