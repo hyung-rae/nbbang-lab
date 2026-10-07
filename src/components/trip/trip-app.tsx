@@ -104,7 +104,7 @@ export function TripApp({
   return (
     <>
       <PageShell pb="calc(170px + env(safe-area-inset-bottom))" gap={22}>
-        <AppHeader admin={admin} sharePath={`/t/${data.slug}`} />
+        <AppHeader admin={admin} />
         <Ticket data={data} today={today} total={result.total} weather={weather} />
         <Stack role="tabpanel" gap={36}>
           {body}

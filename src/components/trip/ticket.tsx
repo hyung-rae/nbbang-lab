@@ -4,6 +4,7 @@ import { Badge, Box, Group, SimpleGrid, Text, Title, UnstyledButton, VisuallyHid
 import { Copy, MapPin, RotateCw, Thermometer } from "lucide-react";
 import Image from "next/image";
 import { Suspense, use, useState } from "react";
+import { CopyLinkButton } from "@/components/copy-link-button";
 import { toast } from "@/components/notify";
 import { tripBadge, tripDateRange } from "@/lib/domain/dates";
 import { won } from "@/lib/domain/format";
@@ -164,11 +165,15 @@ export function Ticket({
   return (
     <header className={classes.ticket}>
       <div className={classes.head}>
-        {badge && (
-          <Badge color="yellow" c="dark" size="lg">
-            {badge}
-          </Badge>
-        )}
+        {/* 오른쪽 위 여행 링크 복사(공유 아이콘) — 앱 헤더에서 옮겨 왔다 */}
+        <Group align="flex-start" gap="xs" wrap="nowrap">
+          {badge && (
+            <Badge color="yellow" c="dark" size="lg">
+              {badge}
+            </Badge>
+          )}
+          <CopyLinkButton path={`/t/${data.slug}`} label="여행 링크 복사" variant="transparent" ml="auto" className={classes.share} />
+        </Group>
         <Title order={1} mt={10} mb={4} fz="clamp(28px, 8vw, 38px)" lh={1.15} style={{ textWrap: "balance" }}>
           {trip.name || "이름 없는 여행"}
         </Title>

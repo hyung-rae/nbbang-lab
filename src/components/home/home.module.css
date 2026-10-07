@@ -13,3 +13,40 @@
     text-underline-offset: 2px;
   }
 }
+
+/* 소개 카드 안 사용 방법 — 위 소개 글과 옅은 선으로 나눈다. 글자는 카드 글자색(흰색)을 따른다 */
+.howTo {
+  margin-top: var(--mantine-spacing-md);
+  padding-top: var(--mantine-spacing-md);
+  border-top: 1px solid color-mix(in srgb, var(--mantine-color-white) 30%, transparent);
+}
+
+.mail {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 엔빵 제목 왼쪽 로고 — 검은 실루엣(투명 바탕)을 카드 글자색(흰색)에 맞춰 뒤집는다. 크기는 제목 글자와 같이 */
+.titleLogo {
+  width: clamp(32px, 9vw, 44px);
+  height: auto;
+  filter: invert(1);
+}
+
+/* 여행 목록 보기 버튼 — 올리면 화살표가 오른쪽으로 */
+.arrow {
+  transition: transform 150ms ease;
+}
+
+.toTrips:hover .arrow,
+.toTrips:focus-visible .arrow {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow {
+    transition: none;
+  }
+}

@@ -94,3 +94,14 @@
     transform: rotate(360deg);
   }
 }
+
+/* 머리 오른쪽 위 여행 링크 복사(Mantine ActionIcon) — .iconButton 과 같은 모양.
+   ActionIcon 기본 규칙과 같은 우선순위면 CSS 로드 순서에 따라 지므로 .head 로 한 단계 올린다 */
+.head .share {
+  background-color: rgb(255 255 255 / 0.14);
+  color: var(--mantine-color-white);
+
+  &:hover {
+    background-color: rgb(255 255 255 / 0.22);
+  }
+}

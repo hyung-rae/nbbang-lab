@@ -1,13 +1,14 @@
 "use client";
 
 import { Button, Checkbox, Group, Paper, Progress, Stack, Text, TextInput, Title } from "@mantine/core";
+import { ReceiptText } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
 import { OptionSelect } from "@/components/form/option-select";
 import classes from "@/components/list.module.css";
 import { toast } from "@/components/notify";
 import { SHOP_GROUPS, type ShopGroup } from "@/lib/domain/categories";
 import type { ShoppingItem, TripData } from "@/lib/domain/types";
-import { addShoppingItem, clearDoneShopping, deleteShoppingItem, setShoppingDone } from "@/lib/trips/actions";
+import { addShoppingItem, deleteShoppingItem, setShoppingDone } from "@/lib/trips/actions";
 import { shoppingSchema, firstError } from "@/lib/trips/schema";
 import { DeleteConfirm, Empty, SectionTitle, TrashButton, useAction } from "./parts";
 import shop from "./shop-tab.module.css";
@@ -23,11 +24,11 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
   const [group, setGroup] = useState<ShopGroup>("고기");
   const [error, setError] = useState("");
   const { pending, run } = useAction();
-  // 무엇을 지울지(항목 하나 / 담은 것 전부). 닫히는 동안에도 문구가 남게 열림과 따로 둔다
-  const [target, setTarget] = useState<{ item: ShoppingItem } | "done" | null>(null);
+  // 지울 항목. 닫히는 동안에도 문구가 남게 열림과 따로 둔다
+  const [target, setTarget] = useState<ShoppingItem | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const ask = (t: { item: ShoppingItem } | "done") => {
-    setTarget(t);
+  const ask = (item: ShoppingItem) => {
+    setTarget(item);
     setConfirmOpen(true);
   };
 
@@ -59,15 +60,18 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
 
   return (
     <Stack component="section" gap="sm">
-      <SectionTitle count={items.length ? `${items.length}개` : undefined}>장볼 것</SectionTitle>
-      {items.length > 0 && (
-        <Group gap={10} wrap="nowrap">
-          <Progress aria-hidden flex={1} size="sm" radius="xl" value={(done / items.length) * 100} />
-          <Text size="sm" c="dimmed">
-            {done} / {items.length} 담음
-          </Text>
-        </Group>
-      )}
+      {/* 제목 옆에 진행 막대 + "담은 수 / 전체" — 전체 개수가 여기 있으니 제목 옆 "N개"는 뺐다 */}
+      <Group gap={12} wrap="nowrap">
+        <SectionTitle>장볼 것</SectionTitle>
+        {items.length > 0 && (
+          <>
+            <Progress aria-hidden flex={1} size="sm" radius="xl" value={(done / items.length) * 100} />
+            <Text size="sm" c="dimmed" style={{ flex: "none" }}>
+              {done} / {items.length} 담음
+            </Text>
+          </>
+        )}
+      </Group>
 
       <form
         noValidate
@@ -143,7 +147,7 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
                       <TrashButton
                         label={`${x.name} 지우기`}
                         disabled={pending}
-                        onClick={() => ask({ item: x })}
+                        onClick={() => ask(x)}
                       />
                     </Group>
                   ))}
@@ -154,41 +158,26 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
         </Stack>
       )}
 
-      {items.length > 0 && (
+      {/* "담은 것 지우기"는 뺐다(2026-10-07 사용자 지시) — 지우기는 항목별 휴지통만 */}
+      {items.length > 0 && data.members.length > 0 && (
         <Group gap="xs">
-          {done > 0 && (
-            <Button variant="default" disabled={pending} onClick={() => ask("done")}>
-              담은 것 지우기
-            </Button>
-          )}
-          {data.members.length > 0 && (
-            <Button variant="default" onClick={onRecordExpense}>
-              장본 금액 지출로 기록
-            </Button>
-          )}
+          <Button variant="default" leftSection={<ReceiptText aria-hidden size={16} />} onClick={onRecordExpense}>
+            지출로 추가
+          </Button>
         </Group>
       )}
       <DeleteConfirm
         opened={confirmOpen}
-        title={target === "done" ? "담은 것 지우기" : "장볼 것 삭제"}
+        title="장볼 것 삭제"
         loading={pending}
         onClose={() => setConfirmOpen(false)}
         onConfirm={() => {
           if (!target) return;
           const close = () => setConfirmOpen(false);
-          if (target === "done") run(() => clearDoneShopping(slug), { success: "담은 것을 지웠어요", onSuccess: close });
-          else run(() => deleteShoppingItem(slug, target.item.id), { onSuccess: close });
+          run(() => deleteShoppingItem(slug, target.id), { onSuccess: close });
         }}
       >
-        {target === "done" ? (
-          <>
-            담은 것 <strong>{done}개</strong>를 장보기 목록에서 지울까요?
-          </>
-        ) : (
-          <>
-            <strong>{target?.item.name}</strong> 항목을 장보기 목록에서 지울까요?
-          </>
-        )}
+        <strong>{target?.name}</strong> 항목을 장보기 목록에서 지울까요?
       </DeleteConfirm>
     </Stack>
   );

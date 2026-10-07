@@ -50,7 +50,7 @@ grep -n -B2 -A6 "taker" .claude/glossary.md           # 코드 식별자로 역�
 
 ### 끝전 (takerCost)
 - **코드 식별자**: `Settlement.takerCost`
-- **정의**: 100원 단위 정리로 덤탱이 쓸 사람이 추가로 부담하는 금액. 화면에 "끝전 +N원".
+- **정의**: 100원 단위 정리로 덤탱이 쓸 사람이 추가로 부담하는 금액. 정산 복사 문구에만 "(끝전 +N원)" — 정산 카드에서는 뺐다(2026-10-07 사용자 지시).
 
 ### 최소 송금 (transfers)
 - **코드 식별자**: `Settlement.transfers`, `minTransfers()`
