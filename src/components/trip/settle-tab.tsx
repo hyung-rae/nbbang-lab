@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
+import { ActionIcon, Badge, Box, Group, Paper, Stack, Text, Title } from "@mantine/core";
+import { Share2 } from "lucide-react";
 import { useState } from "react";
 import classes from "@/components/list.module.css";
 import { toast } from "@/components/notify";
@@ -36,6 +37,14 @@ export function SettleTab({
   const byId = (id: string) => members.find((m) => m.id === id);
   const [fallback, setFallback] = useState("");
 
+  async function copySettlement() {
+    const text = settlementText(data.trip.name, members, result);
+    if (await copyText(text)) {
+      setFallback("");
+      toast("정산 내용을 복사했어요");
+    } else setFallback(text);
+  }
+
   return (
     <>
       <Stack component="section" gap="sm">
@@ -47,7 +56,7 @@ export function SettleTab({
             </Text>
             {/* 덤탱이(화면 표기 "좀 더 착한 사람") 고르기 + 송금 목록을 한 카드로 — 바꾸면 바로 아래 금액이 바뀐다 */}
             <Paper withBorder radius="lg" style={{ overflow: "hidden" }}>
-              <Taker data={data} result={result} />
+              <Taker data={data} result={result} onCopy={copySettlement} />
               <Box
                 component="ol"
                 className={classes.list}
@@ -79,20 +88,6 @@ export function SettleTab({
                 ))}
               </Box>
             </Paper>
-            <Group>
-              <Button
-                variant="default"
-                onClick={async () => {
-                  const text = settlementText(data.trip.name, members, result);
-                  if (await copyText(text)) {
-                    setFallback("");
-                    toast("정산 내용을 복사했어요");
-                  } else setFallback(text);
-                }}
-              >
-                정산 내용 복사
-              </Button>
-            </Group>
             {fallback && <CopyFallback id="settle-copy" text={fallback} label="복사할 정산 내용" />}
           </>
         ) : (
@@ -161,22 +156,38 @@ function Who({ member }: { member: Member | undefined }) {
   );
 }
 
-function Taker({ data, result }: { data: TripData; result: Settlement }) {
+/** 좀 더 착한 사람(덤탱이) 고르기. 제목 줄: 지금 맡은 사람 칩 + 정산 내용 복사(공유 아이콘 — 여행 링크 복사와 같은 모양) */
+function Taker({ data, result, onCopy }: { data: TripData; result: Settlement; onCopy: () => void }) {
   const { pending, run } = useAction();
   if (!result.taker) return null;
   const explicit = data.takerId !== null && data.members.some((m) => m.id === data.takerId);
+  const taker = data.members.find((m) => m.id === result.taker);
   return (
     <Box p="md">
       <Stack gap="sm">
-        <Group justify="space-between" align="baseline" gap="xs">
-          <Title order={3} size="h5">
-            좀 더 착한 사람
-          </Title>
-          {result.takerCost > 0 && (
-            <Text size="sm" fw={600} c="red" style={{ whiteSpace: "nowrap" }}>
-              끝전 +{won(result.takerCost)}
-            </Text>
-          )}
+        <Group justify="space-between" gap="xs" wrap="nowrap">
+          <Group gap="xs" miw={0} wrap="nowrap">
+            <Title order={3} size="h5" style={{ whiteSpace: "nowrap" }}>
+              좀 더 착한 사람
+            </Title>
+            {taker && (
+              <Badge variant="light" size="lg" radius="xl" tt="none" pl={3} miw={0} leftSection={<Avatar member={taker} size={20} />}>
+                {taker.name}
+              </Badge>
+            )}
+          </Group>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="input-sm"
+            radius="md"
+            aria-label="정산 내용 복사"
+            title="정산 내용 복사"
+            style={{ flex: "none" }}
+            onClick={onCopy}
+          >
+            <Share2 aria-hidden size={18} />
+          </ActionIcon>
         </Group>
         <Text size="xs" c="dimmed">
           송금은 100원 단위로 끊고, 남는 끝전은 이 사람이 몰아서 내요.
