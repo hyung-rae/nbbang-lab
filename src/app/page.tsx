@@ -1,7 +1,9 @@
-import { Badge, Paper, Stack, Text, Title } from "@mantine/core";
+import { Badge, Group, Paper, Stack, Text, Title } from "@mantine/core";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { AppHeader } from "@/components/app-header";
 import { GitHubMark } from "@/components/github-mark";
+import { HowToUse } from "@/components/home/how-to-use";
 import { NewTripForm } from "@/components/home/new-trip-form";
 import classes from "@/components/home/home.module.css";
 import { LinkButton } from "@/components/link-button";
@@ -20,9 +22,12 @@ export default async function Home() {
         <Badge color="yellow" c="dark" size="lg">
           여행가서 친구들끼리
         </Badge>
-        <Title order={1} mt="xs" fz="clamp(32px, 9vw, 44px)" lh={1.1}>
-          {SITE_NAME}
-        </Title>
+        <Group gap={10} mt="xs" wrap="nowrap">
+          <Image src="/icon-192.png" alt="" width={44} height={44} priority className={classes.titleLogo} />
+          <Title order={1} fz="clamp(32px, 9vw, 44px)" lh={1.1}>
+            {SITE_NAME}
+          </Title>
+        </Group>
         <Text size="sm" mt={6} opacity={0.9}>
           같이 쓴 돈을 적으면 누가 누구에게 얼마를 보내면 되는지 바로 보여 줘요.
           <br />
@@ -37,19 +42,27 @@ export default async function Home() {
           <GitHubMark size={14} />
           GitHub 에서 소스 보기
         </Text>
+        <HowToUse />
+        {/* 참여자는 여기서 여행 목록으로 — 관리자는 아래 새 여행 폼(목록은 헤더 버튼) */}
+        {!admin && (
+          <Group justify="flex-end" mt="md">
+            <LinkButton
+              href="/trips"
+              variant="white"
+              size="md"
+              className={classes.toTrips}
+              rightSection={<ArrowRight aria-hidden size={18} className={classes.arrow} />}
+            >
+              여행 목록 보기
+            </LinkButton>
+          </Group>
+        )}
       </Paper>
 
-      {admin ? (
+      {admin && (
         <Stack gap="sm">
           <SectionTitle>새 여행</SectionTitle>
           <NewTripForm />
-        </Stack>
-      ) : (
-        <Stack align="center" gap="md" py="md">
-          <Image src="/icon-512.png" alt={`${SITE_NAME} 로고`} width={160} height={160} priority />
-          <LinkButton href="/trips" size="md">
-            여행 목록 보기
-          </LinkButton>
         </Stack>
       )}
     </PageShell>

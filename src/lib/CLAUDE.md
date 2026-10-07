@@ -21,7 +21,7 @@
 | `auth/admin.ts` | `isAdmin()` — 쿠키 `nb_admin` 확인, `adminConfig()` (`ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`) | 서버(`server-only`) |
 | `auth/actions.ts` | `login(password)`·`logout()` | 서버 |
 | `realtime/` | 여행 변경 신호 채널 `trip:<slug>` / `changed` (`notify.ts` 는 서버 전용) | |
-| `site.ts` | 앱 이름("엔빵")·설명·사이트 주소 | |
+| `site.ts` | 앱 이름("엔빵")·설명·사이트 주소·저장소 주소·관리자 이메일(홈 사용 방법) | |
 
 ## 데이터 흐름
 
