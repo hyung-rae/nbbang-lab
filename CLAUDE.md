@@ -23,7 +23,7 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 | 테스트 | Vitest 5, PGlite(마이그레이션 검증) |
 | 배포 | Vercel — GitHub 연동(PR → 미리보기, `main` → 프로덕션), 함수 리전 서울 `icn1`(`vercel.json`, Supabase 와 같은 지역) |
 | CI | GitHub Actions `.github/workflows/ci.yml` — PR·`main` push 마다 lint·typecheck·test·build (DB·비밀 키 없이) |
-| 저장소 | **공개** GitHub `hyungrae94/nbbang-lab` |
+| 저장소 | **공개** GitHub `hyung-rae/nbbang-lab` |
 | 패키지 | npm (`.claude/settings.json` 허용 목록이 npm 기준) |
 
 ## 3. 명령어
