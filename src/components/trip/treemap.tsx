@@ -4,7 +4,7 @@ import { Box, Paper, Text, UnstyledButton } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
 import { percent, won } from "@/lib/domain/format";
 import { layoutTreemap, treemapLabelLevel, type CategoryRow } from "@/lib/domain/treemap";
-import { CategoryDot, categoryColor, filledColor, inkOn } from "./parts";
+import { CategoryDot, INK_ON_FILLED, categoryColor, filledColor } from "./parts";
 import classes from "./treemap.module.css";
 
 const GAP = 2;
@@ -52,7 +52,7 @@ export function Treemap({ rows, total }: { rows: CategoryRow[]; total: number })
                 width: Math.max(0, w),
                 height: Math.max(0, h),
                 backgroundColor: filledColor(color),
-                color: inkOn(color),
+                color: INK_ON_FILLED,
               }}
             >
               {level !== "none" && <Text span size="sm" fw={600} c="inherit">{r.category}</Text>}

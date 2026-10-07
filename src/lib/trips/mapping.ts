@@ -46,6 +46,7 @@ export function toTripData(row: TripQueryRow): TripData {
     expenses,
     shopping,
     takerId: row.taker_member_id,
+    coords: row.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : null,
     forecast: toForecast(row.forecast),
     updatedAt: row.updated_at,
   };

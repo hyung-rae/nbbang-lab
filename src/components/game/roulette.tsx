@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { easeOutQuart, secureRandInt, wheelTargetAngle } from "@/lib/domain/game";
 import type { Member } from "@/lib/domain/types";
-import { inkOn, memberColor } from "@/components/trip/parts";
+import { INK_ON_FILLED } from "@/components/trip/parts";
 import { GameDesc, GoButton, memberFill, runAnimation } from "./shared";
 
 const R = 92;
@@ -77,7 +77,7 @@ export function Roulette({ players, locked, onWin }: { players: Member[]; locked
                   dominantBaseline="central"
                   fontSize={fs}
                   transform={`rotate(${rot.toFixed(2)} ${tp[0].toFixed(2)} ${tp[1].toFixed(2)})`}
-                  style={{ fill: inkOn(memberColor(m.color)), fontWeight: 700 }}
+                  style={{ fill: INK_ON_FILLED, fontWeight: 700 }}
                 >
                   {Array.from(m.name).slice(0, 5).join("")}
                 </text>

@@ -5,13 +5,15 @@
 | 경로 | 내용 |
 |---|---|
 | `trip/trip-app.tsx` | 여행 화면 루트(클라이언트) — 탭·지출 추가 버튼·시트 상태. 데이터는 서버 props, 바뀌면 `refresh()` 로 새 props |
-| `trip/parts.tsx` | 공용 부품: `Avatar`·`CategoryDot`·`Chip`·`SectionTitle`·`Empty`·`TrashButton`/`DeleteConfirm`(삭제 확인 창)·`copyText`/`CopyFallback`·`useAction`, 색 `memberColor`·`categoryColor`·`filledColor`·`inkOn` |
+| `trip/parts.tsx` | 공용 부품: `Avatar`·`CategoryDot`·`Chip`·`SectionTitle`·`Empty`·`TrashButton`/`DeleteConfirm`(삭제 확인 창)·`copyText`/`CopyFallback`·`useAction`, 색 `memberColor`·`categoryColor`·`filledColor`·`INK_ON_FILLED`(칠한 색 위 글자는 노랑·라임도 흰색 — 2026-10-07 사용자 결정) |
 | `trip/*-tab.tsx`, `expense-sheet.tsx`, `ticket.tsx`, `treemap.tsx` | 탭별 화면, 지출 입력 시트(Mantine `Drawer` 아래쪽), 여행 티켓, 트리맵 |
+| `trip/ticket.tsx` 숙소 패널 | 주소 줄 + 오른쪽 아이콘 [주소 복사][네이버 지도][카카오맵], 둘째 줄 **지금 날씨**(`☁️ 흐림 18° · 체감 16°` / `HH:MM 기준 · Open-Meteo` / [↻]). 주소 없으면 패널째 숨김 |
 | `trip/use-live-updates.ts` | 다른 화면 변경 신호 구독 → `router.refresh()` (재연결·탭 다시 보일 때도) |
 | `game/` | 몰빵 게임 — `game-tab`(미션·참가자·결과) + 룰렛·사다리·폭탄·카드 |
 | `form/` | `DatePicker`·`DateRangePicker`(Mantine `DatePickerInput`, `ko`·일요일 시작), `OptionSelect`(Mantine `Select`) |
 | `trips/`, `home/`, `app-header.tsx` | 여행 목록, 새 여행 폼, 공통 헤더 |
 | `page-shell.tsx`, `link-button.tsx`, `notify.ts`, `list.module.css` | 화면 틀(가운데 36rem), 버튼 모양 링크, 알림 `toast`/`toast.error`, 카드 안 목록 줄 스타일 |
+| `page-loader.tsx` | 화면 이동 로딩(가운데 아이콘 + 도는 원). `app/loading.tsx`(데이터 기다리는 동안) + `app/template.tsx`(첫 경로가 바뀌는 이동 직후 1초 덮기, 타이밍은 CSS — 서버 지연은 `refresh()` 까지 느려져서 안 씀. `/t/a`→`/t/b` 는 안 덮음). 루트 loading 이라 없는 여행 링크도 200(+noindex) |
 
 ## 스타일 체계 (Mantine 9, 2026-10-07 shadcn·Tailwind 에서 전면 교체)
 
@@ -52,5 +54,9 @@
   - `Drawer`·`Modal` 의 X 에는 기본 `aria-label` 이 없다 → `closeButtonProps={{ "aria-label": "닫기" }}`.
   - 창 위에 창(시트 위 삭제 확인)을 띄우면 **Esc 한 번에 둘 다 닫힌다** — 열린 창마다 window 에서 Esc 를 듣기 때문(실측).
     위 창이 떠 있는 동안 아래 창에 `closeOnEscape={false}`·`closeOnClickOutside={false}` (`expense-sheet.tsx` `confirming`).
+- **티켓 날씨 줄은 서버가 기다리지 않고 넘긴 Promise 를 `<Suspense>` + `use()` 로 읽는다** (`page.tsx` → `TripApp` → `Ticket`).
+  날씨가 늦어도 티켓·탭은 먼저 뜬다. 새로고침 값은 티켓 안 상태로 들고, 실시간 갱신으로 서버 값이 새로 오면 관측 시각이 더 최근인 쪽을 보여 준다(`newerWeather`).
+- 지도 로고는 `public/brands/*-map.png`(사용자 제공 앱 아이콘, 144px) + `next/image`. **같은 파일 이름으로 덮어쓰면 next/image·브라우저 캐시가 옛 그림을 계속 낸다**(실측) — 로고를 바꿀 땐 이름을 바꾼다.
+  Open-Meteo 는 CC BY 4.0 이라 출처를 화면 글자로 표기한다(기준 시각 옆 링크).
 - 브라우저 점검 함정: Chrome 탭이 **hidden**(`document.visibilityState`)이면 rAF·CSS 전환이 멈춘다. Mantine `Drawer`·`Popover` 는 전환이 rAF 라 **아예 안 열린 것처럼** 보이고,
   사다리가 안 끝나는 것처럼 보인다 — 코드보다 탭 상태를 먼저 의심한다.

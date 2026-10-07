@@ -68,6 +68,8 @@ export interface TripData {
   expenses: Expense[];
   shopping: ShoppingItem[];
   takerId: MemberId | null;
+  /** 숙소 좌표 (주소 저장 때 지오코딩). 없으면 티켓의 지금 날씨 줄을 숨긴다 */
+  coords: { lat: number; lng: number } | null;
   forecast: Forecast | null;
   /** 마지막 저장 시각 (ISO) */
   updatedAt: string;

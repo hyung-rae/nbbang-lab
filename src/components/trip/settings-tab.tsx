@@ -20,7 +20,7 @@ import {
   TrashButton,
   copyText,
   filledColor,
-  inkOn,
+  INK_ON_FILLED,
   useAction,
 } from "./parts";
 
@@ -330,7 +330,7 @@ function ColorPick({ member, onPick }: { member: Member; onPick: (color: number)
                 onPick(i);
                 setOpened(false);
               }}
-              style={{ color: inkOn(c), cursor: "pointer" }}
+              style={{ color: INK_ON_FILLED, cursor: "pointer" }}
             >
               {member.color === i && <Check aria-hidden size={16} />}
             </ColorSwatch>
