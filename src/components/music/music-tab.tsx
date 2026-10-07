@@ -3,7 +3,7 @@
 import { Box, Button, Group, Paper, Skeleton, Stack, Text, VisuallyHidden } from "@mantine/core";
 import { Disc3, RefreshCw } from "lucide-react";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import list from "@/components/list.module.css";
 import { Chip, Empty, SectionTitle } from "@/components/trip/parts";
 import { ERAS, type EraId, PICK, THEMES, type ThemeId } from "@/lib/music/chips";
@@ -15,24 +15,27 @@ import classes from "./music.module.css";
 const MIN_LOADING_MS = 700;
 
 type View =
-  | { kind: "idle" }
   | { kind: "loading" }
   | { kind: "error"; message: string }
   | { kind: "done"; candidates: Song[]; shown: Song[] };
 
 const THEME_GROUPS = ["상황", "장르"] as const;
 
+/** 탭을 열면 골라 두고 바로 불러오는 칸 (2026-10-07 사용자 지시) */
+const DEFAULT_ERA: EraId = "00";
+const DEFAULT_THEME: ThemeId = "idol";
+
 /** 음악 탭 — 시대·테마를 고르면 YouTube 재생목록에서 국내 노래 7곡(PICK). 저장 없이 이 화면에서만 (친구 화면과 공유 안 함) */
 export function MusicTab() {
-  const [era, setEra] = useState<EraId>("all");
-  const [theme, setTheme] = useState<ThemeId | null>(null);
-  const [view, setView] = useState<View>({ kind: "idle" });
+  const [era, setEra] = useState<EraId>(DEFAULT_ERA);
+  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
+  // 처음부터 기본 칸을 불러오는 중으로 시작한다(아래 effect)
+  const [view, setView] = useState<View>({ kind: "loading" });
   // 연달아 누르면 마지막 조건의 결과만 보여 준다
   const request = useRef(0);
 
-  const load = async (nextEra: EraId, nextTheme: ThemeId) => {
+  const fetchSongs = useCallback(async (nextEra: EraId, nextTheme: ThemeId) => {
     const id = ++request.current;
-    setView({ kind: "loading" });
     const [res] = await Promise.all([
       getSongs({ era: nextEra, theme: nextTheme }).catch(
         (): SongsResult => ({ ok: false, error: "노래를 찾지 못했어요. 잠시 뒤 다시 해 주세요." }),
@@ -45,11 +48,20 @@ export function MusicTab() {
         ? { kind: "done", candidates: res.songs, shown: drawSongs(res.songs, PICK) }
         : { kind: "error", message: res.error },
     );
+  }, []);
+
+  const load = (nextEra: EraId, nextTheme: ThemeId) => {
+    setView({ kind: "loading" });
+    fetchSongs(nextEra, nextTheme);
   };
+
+  useEffect(() => {
+    fetchSongs(DEFAULT_ERA, DEFAULT_THEME);
+  }, [fetchSongs]);
 
   const pickEra = (next: EraId) => {
     setEra(next);
-    if (theme) load(next, theme);
+    load(next, theme);
   };
   const pickTheme = (next: ThemeId) => {
     setTheme(next);
@@ -120,13 +132,6 @@ export function MusicTab() {
 }
 
 function Result({ view, onRedraw, showEraHint }: { view: View; onRedraw: () => void; showEraHint: boolean }) {
-  if (view.kind === "idle")
-    return (
-      <Empty title="어떤 노래가 끌려요?">
-        <Text size="sm">위에서 테마를 골라 보세요.</Text>
-      </Empty>
-    );
-
   if (view.kind === "loading")
     return (
       <Stack gap="xs" aria-busy>
