@@ -39,17 +39,19 @@ export function ExpenseListTab({ data, onEdit }: { data: TripData; onEdit: (id: 
               return (
                 <li key={e.id} className={classes.row}>
                   <UnstyledButton className={classes.press} onClick={() => onEdit(e.id)} aria-label={`${e.title} 고치기`}>
-                    <Badge
-                      variant="default"
-                      radius="xl"
-                      size="sm"
-                      fw={500}
-                      leftSection={<CategoryDot category={e.category} size={8} />}
-                      style={{ flex: "none", textTransform: "none" }}
-                    >
-                      {e.category}
-                    </Badge>
+                    {/* 분류 배지는 제목 위 — 옆에 두면 배지 너비만큼 제목 시작이 줄마다 달라진다 */}
                     <Box flex={1} miw={0}>
+                      <Badge
+                        variant="default"
+                        radius="xl"
+                        size="sm"
+                        fw={500}
+                        mb={4}
+                        leftSection={<CategoryDot category={e.category} size={8} />}
+                        style={{ textTransform: "none" }}
+                      >
+                        {e.category}
+                      </Badge>
                       <Text fw={500}>{e.title}</Text>
                       <Text size="xs" c="dimmed">
                         {payer ? `${payer.name} 결제` : "결제자 없음"} · {splitSummary(members, e)}
