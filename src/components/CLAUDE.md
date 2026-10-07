@@ -5,7 +5,7 @@
 | 경로 | 내용 |
 |---|---|
 | `trip/trip-app.tsx` | 여행 화면 루트(클라이언트) — 탭·지출 추가 버튼·시트 상태. 데이터는 서버 props, 바뀌면 `refresh()` 로 새 props |
-| `trip/parts.tsx` | 공용 부품: `Avatar`·`CategoryDot`·`Chip`·`SectionTitle`·`Empty`·`TrashButton`/`DeleteConfirm`(삭제 확인 창)·`copyText`/`CopyFallback`·`useAction`, 색 `memberColor`·`categoryColor`·`filledColor`·`inkOn` |
+| `trip/parts.tsx` | 공용 부품: `Avatar`·`CategoryDot`·`Chip`·`SectionTitle`·`Empty`·`TrashButton`/`DeleteConfirm`(삭제 확인 창)·`copyText`/`CopyFallback`·`useAction`, 색 `memberColor`·`categoryColor`·`filledColor`·`INK_ON_FILLED`(칠한 색 위 글자는 노랑·라임도 흰색 — 2026-10-07 사용자 결정) |
 | `trip/*-tab.tsx`, `expense-sheet.tsx`, `ticket.tsx`, `treemap.tsx` | 탭별 화면, 지출 입력 시트(Mantine `Drawer` 아래쪽), 여행 티켓, 트리맵 |
 | `trip/use-live-updates.ts` | 다른 화면 변경 신호 구독 → `router.refresh()` (재연결·탭 다시 보일 때도) |
 | `game/` | 몰빵 게임 — `game-tab`(미션·참가자·결과) + 룰렛·사다리·폭탄·카드 |

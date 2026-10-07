@@ -53,10 +53,8 @@ export function filledColor(color: MantineColor): string {
   return `var(--mantine-color-${color}-filled)`;
 }
 
-/** filledColor 위에 얹을 글자색. 노랑·라임은 흰 글자가 안 읽혀서 검정 */
-export function inkOn(color: MantineColor): string {
-  return color === "yellow" || color === "lime" ? "var(--mantine-color-black)" : "var(--mantine-color-white)";
-}
+/** filledColor 위에 얹을 글자색. 노랑·라임 위에서도 흰색 (2026-10-07 사용자 결정) */
+export const INK_ON_FILLED = "var(--mantine-color-white)";
 
 export function Avatar({ member, size = 30 }: { member: Member | undefined; size?: number }) {
   if (!member) return null;
