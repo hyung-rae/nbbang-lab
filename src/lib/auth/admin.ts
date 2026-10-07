@@ -6,11 +6,17 @@ export const ADMIN_COOKIE = "nb_admin";
 /** 서명 키가 이보다 짧으면 관리자 기능을 잠근다 (실수로 짧은 키를 넣는 것 방지) */
 const MIN_SECRET = 32;
 
+/** 쿠키 서명 키(관리자 세션·여행 입장 표 공용). 없거나 짧으면 null — 비밀번호 있는 여행은 잠긴 채로 둔다 */
+export function sessionSecret(): string | null {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  return secret && secret.length >= MIN_SECRET ? secret : null;
+}
+
 /** 관리자 비밀번호·서명 키. 둘 중 하나라도 없으면 null — 관리자 기능은 잠기고 나머지 앱은 그대로 (CI·빌드는 키 없이 돈다) */
 export function adminConfig(): { password: string; secret: string } | null {
   const password = process.env.ADMIN_PASSWORD;
-  const secret = process.env.ADMIN_SESSION_SECRET;
-  return password && secret && secret.length >= MIN_SECRET ? { password, secret } : null;
+  const secret = sessionSecret();
+  return password && secret ? { password, secret } : null;
 }
 
 /** 이 요청이 관리자인지 (쿠키 서명·만료 확인). 쿠키를 읽으므로 부르는 페이지는 요청마다 렌더된다 */

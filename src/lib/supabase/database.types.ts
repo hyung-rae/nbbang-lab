@@ -21,6 +21,8 @@ export type TripRow = {
   lng: number | null;
   taker_member_id: string | null;
   forecast: Json | null;
+  /** 입장 비밀번호(평문, 4~20자). null 이면 열린 여행 — 화면 데이터(TripData)에 넣지 않는다 */
+  entry_password: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -76,6 +78,7 @@ export type TripSummaryRow = {
   member_count: number;
   expense_count: number;
   total: number;
+  has_password: boolean;
 };
 
 export type Database = {

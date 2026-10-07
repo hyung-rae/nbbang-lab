@@ -16,12 +16,43 @@ export const getTripBySlug = cache(async (slug: string): Promise<TripData | null
   return data ? toTripData(data as unknown as TripQueryRow) : null;
 });
 
-/** 여행 숙소 좌표만 (날씨 새로고침용). 여행이 없거나 좌표가 없으면 null */
-export async function getTripCoords(slug: string): Promise<{ lat: number; lng: number } | null> {
+export interface TripGate {
+  id: string;
+  name: string;
+  /** 입장 비밀번호. null 이면 열린 여행 */
+  password: string | null;
+  /** 숙소 좌표 (날씨 새로고침이 같은 조회로 쓴다) */
+  coords: { lat: number; lng: number } | null;
+}
+
+/**
+ * 입장 판정에 필요한 것만 — 여행 id·이름·입장 비밀번호·숙소 좌표. 없거나 slug 형식이 틀리면 null.
+ * 비밀번호는 서버 판정에만 쓴다(화면 데이터 TripData 에는 넣지 않는다).
+ * 렌더 중(메타데이터·페이지)에는 cache() 로 요청당 한 번. Server Action 은 렌더 밖이라 부를 때마다 조회한다
+ */
+export const getTripGate = cache(async (slug: string): Promise<TripGate | null> => {
   if (!isValidSlug(slug)) return null;
-  const { data, error } = await supabaseServer().from("trips").select("lat, lng").eq("slug", slug).maybeSingle();
+  const { data, error } = await supabaseServer()
+    .from("trips")
+    .select("id, name, entry_password, lat, lng")
+    .eq("slug", slug)
+    .maybeSingle();
   if (error) throw error;
-  return data?.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null;
+  if (!data) return null;
+  const coords = data.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null;
+  return { id: data.id, name: data.name, password: data.entry_password, coords };
+});
+
+/** 주어진 여행들의 slug → 비밀번호 (여행 목록에서 입장 표를 가진 여행만 검증하는 데 쓴다). 비밀번호 없는 여행은 빠진다 */
+export async function getTripPasswords(slugs: string[]): Promise<Map<string, string>> {
+  if (!slugs.length) return new Map();
+  const { data, error } = await supabaseServer()
+    .from("trips")
+    .select("slug, entry_password")
+    .in("slug", slugs)
+    .not("entry_password", "is", null);
+  if (error) throw error;
+  return new Map((data ?? []).map((t) => [t.slug, t.entry_password as string]));
 }
 
 export interface TripSummary {
@@ -33,6 +64,8 @@ export interface TripSummary {
   expenseCount: number;
   total: number;
   updatedAt: string;
+  /** 입장 비밀번호가 있는 여행인지 (값은 목록에 오지 않는다) */
+  hasPassword: boolean;
 }
 
 /**
@@ -54,5 +87,6 @@ export async function listTrips(): Promise<TripSummary[]> {
     expenseCount: t.expense_count,
     total: Number(t.total),
     updatedAt: t.updated_at,
+    hasPassword: t.has_password,
   }));
 }

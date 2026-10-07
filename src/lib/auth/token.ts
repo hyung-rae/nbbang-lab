@@ -32,6 +32,28 @@ export function verifySession(token: string, secret: string, now = Date.now()): 
   return expires > now && sameText(m[2], mac(secret, expires));
 }
 
+/*
+ * 여행 입장 표 (2026-10-07: 여행별 입장 비밀번호). 쿠키 값 = "만료시각(ms).HMAC" — 관리자 세션과 같은 모양이고
+ * 서명 대상 앞머리("trip.")로 구분한다. 서명에 지금 비밀번호의 해시를 섞어서, 관리자가 비밀번호를 바꾸면 이전에 받은 표가 모두 무효가 된다.
+ */
+function tripMac(secret: string, slug: string, password: string, expires: number): string {
+  const pw = createHash("sha256").update(password).digest("base64url");
+  return createHmac("sha256", secret).update(`trip.${slug}.${pw}.${expires}`).digest("base64url");
+}
+
+export function signTripPass(secret: string, slug: string, password: string, now = Date.now()): string {
+  const expires = now + SESSION_DAYS * DAY_MS;
+  return `${expires}.${tripMac(secret, slug, password, expires)}`;
+}
+
+/** 이 여행·지금 비밀번호로 서명됐고 만료 전이면 true */
+export function verifyTripPass(token: string, secret: string, slug: string, password: string, now = Date.now()): boolean {
+  const m = /^(\d{13})\.([A-Za-z0-9_-]+)$/.exec(token);
+  if (!m) return false;
+  const expires = Number(m[1]);
+  return expires > now && sameText(m[2], tripMac(secret, slug, password, expires));
+}
+
 export function samePassword(input: string, actual: string): boolean {
   return sameText(input, actual);
 }

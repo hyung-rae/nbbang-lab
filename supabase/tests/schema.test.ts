@@ -339,3 +339,67 @@ describe("20261008 설정 한 번에 저장 · 12색", () => {
     }
   });
 });
+
+describe("20261009 여행 입장 비밀번호", () => {
+  let db: Db;
+  beforeEach(async () => {
+    db = await freshDb();
+  });
+
+  const saveTrip = (tripId: string, trip: object) =>
+    db.query(`select save_trip_settings($1, $2::jsonb, '{}'::uuid[], '[]'::jsonb, '[]'::jsonb, 12)`, [
+      tripId,
+      JSON.stringify(trip),
+    ]);
+  const password = async (tripId: string) =>
+    (await one<{ entry_password: string | null }>(db, `select entry_password from trips where id = $1`, [tripId]))
+      .entry_password;
+  const info = { name: "가평", start: null, end: null, address: null };
+
+  it("기존 여행은 비밀번호 없음(null), 길이는 4~20자", async () => {
+    const { tripId } = await seed(db);
+    expect(await password(tripId)).toBeNull();
+    await db.query(`update trips set entry_password = 'abcd' where id = $1`, [tripId]);
+    await db.query(`update trips set entry_password = $2 where id = $1`, [tripId, "가".repeat(20)]);
+    await expect(db.query(`update trips set entry_password = 'abc' where id = $1`, [tripId])).rejects.toThrow(
+      /entry_password/,
+    );
+    await expect(db.query(`update trips set entry_password = $2 where id = $1`, [tripId, "a".repeat(21)])).rejects.toThrow(
+      /entry_password/,
+    );
+  });
+
+  it("save_trip_settings — password 키가 있으면 저장, 빈 문자열이면 열림(null), 키가 없으면 그대로", async () => {
+    const { tripId } = await seed(db);
+    await saveTrip(tripId, { ...info, password: "pass1234" });
+    expect(await password(tripId)).toBe("pass1234");
+    await saveTrip(tripId, { ...info, name: "양평" });
+    expect(await password(tripId)).toBe("pass1234");
+    await saveTrip(tripId, { ...info, password: "" });
+    expect(await password(tripId)).toBeNull();
+    await expect(saveTrip(tripId, { ...info, password: "abc" })).rejects.toThrow(/entry_password/);
+  });
+
+  it("trip_summaries — has_password 만 보이고 비밀번호 값은 없다", async () => {
+    const { tripId } = await seed(db);
+    await db.query(`insert into trips (slug, name) values ('emptytrip000', '빈 여행')`);
+    await db.query(`update trips set entry_password = 'pass1234' where id = $1`, [tripId]);
+    const rows = (await db.query<Record<string, unknown>>(`select * from trip_summaries order by slug`)).rows;
+    expect(rows.map((r) => [r.slug, r.has_password])).toEqual([
+      ["abcdefghijkl", true],
+      ["emptytrip000", false],
+    ]);
+    expect(Object.keys(rows[0])).not.toContain("entry_password");
+  });
+
+  it("anon·authenticated 는 비밀번호를 읽을 수 없다", async () => {
+    const { tripId } = await seed(db);
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`set role ${role}`);
+      await expect(db.query(`select entry_password from trips`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`select * from trip_summaries`)).rejects.toThrow(/permission denied/);
+      await expect(saveTrip(tripId, { ...info, password: "" })).rejects.toThrow(/permission denied/);
+      await db.exec(`reset role`);
+    }
+  });
+});

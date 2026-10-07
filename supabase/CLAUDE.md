@@ -8,8 +8,9 @@
 | `tests/schema.test.ts` | 마이그레이션을 **PGlite(WASM Postgres 17)** 에 차례로 적용해 제약·트리거·함수·권한을 검증 (`npm test` 에 포함) |
 
 - 테이블: `trips` · `members` · `expenses` · `expense_splits` · `shopping_items` · `music_cache`
-- 함수: `save_expense`(지출 + 나눌 사람) · `save_trip_settings`(설정 한 번에 저장: 여행 정보·멤버 빼기·색·추가) · `add_member`(지금 화면은 안 씀) · `add_shopping_item` · `touch_trip`(트리거)
-- 뷰: `trip_summaries`(여행 목록용 — 인원·지출 건수·합계를 여행당 한 행)
+- 함수: `save_expense`(지출 + 나눌 사람) · `save_trip_settings`(설정 한 번에 저장: 여행 정보(+ `password` 키가 있으면 입장 비밀번호)·멤버 빼기·색·추가) · `add_member`(지금 화면은 안 씀) · `add_shopping_item` · `touch_trip`(트리거)
+- 뷰: `trip_summaries`(여행 목록용 — 인원·지출 건수·합계·`has_password` 를 여행당 한 행. 비밀번호 값은 넣지 않는다)
+- `trips.entry_password`: 입장 비밀번호 평문 4~20자, null 이면 열린 여행(20261009). 서버만 읽는다 — 화면 데이터로 내보내지 않는다(`src/lib/CLAUDE.md`)
 - TS 타입: `src/lib/supabase/database.types.ts` (지금은 손으로 맞춤 — 아래 함정)
 
 ## 접근 모델 (인증 도입 전)

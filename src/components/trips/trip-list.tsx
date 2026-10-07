@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Group, Paper, Stack, Text, UnstyledButton } from "@mantine/core";
+import { Lock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { CopyLinkButton } from "@/components/copy-link-button";
@@ -21,9 +22,13 @@ function dateText(t: TripSummary) {
 function TripSummaryText({ trip: t }: { trip: TripSummary }) {
   return (
     <Box flex={1} miw={0}>
-      <Text fw={600} truncate>
-        {t.name}
-      </Text>
+      <Group gap={6} wrap="nowrap">
+        <Text fw={600} truncate>
+          {t.name}
+        </Text>
+        {/* 입장 비밀번호가 있는 여행 표시 */}
+        {t.hasPassword && <Lock aria-label="비밀번호 있음" size={14} className={cards.lock} />}
+      </Group>
       <Text size="xs" c="dimmed">
         {dateText(t)}
       </Text>
@@ -35,10 +40,10 @@ function TripSummaryText({ trip: t }: { trip: TripSummary }) {
 }
 
 /**
- * 여행을 누르면 참여자는 입장 비밀번호 창 → 맞으면 이동, 관리자는 바로 이동.
- * 링크 복사(누구나), (관리자만) 휴지통 → 확인 창에서 삭제
+ * 여행을 누르면 바로 이동. 비밀번호를 넣어야 하는 여행(locked — 서버가 판정, 관리자는 늘 비어 있음)만 입장 창 → 맞으면 이동.
+ * 링크 복사(누구나 — 링크로 들어와도 서버가 입장 화면을 보인다), (관리자만) 휴지통 → 확인 창에서 삭제
  */
-export function TripList({ trips, admin }: { trips: TripSummary[]; admin: boolean }) {
+export function TripList({ trips, admin, locked }: { trips: TripSummary[]; admin: boolean; locked: string[] }) {
   const { pending, run } = useAction();
   const [target, setTarget] = useState<TripSummary | null>(null);
   const [opened, setOpened] = useState(false);
@@ -62,7 +67,7 @@ export function TripList({ trips, admin }: { trips: TripSummary[]; admin: boolea
           {trips.map((t) => (
             <Paper component="li" key={t.slug} withBorder radius="lg" className={cards.card}>
               <Group className={classes.hoverRow} gap={4} pr="xs" wrap="nowrap">
-                {admin ? (
+                {!locked.includes(t.slug) ? (
                   <UnstyledButton component={Link} href={`/t/${t.slug}`} className={classes.press} flex={1} miw={0}>
                     <TripSummaryText trip={t} />
                   </UnstyledButton>

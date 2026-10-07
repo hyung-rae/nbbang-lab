@@ -7,7 +7,7 @@
 | `domain/` | 정산·트리맵·날짜·표시 문구·몰빵 게임·날씨 코드표(`weather.ts`)·주소 지역 추출(`address.ts`) **순수 함수** + `*.test.ts` | 어디서나 |
 | `trips/schema.ts` | zod 입력 검증 — 화면(즉시 안내)과 Server Action(최종 검증)이 **같이** 쓴다. 안내 문구·상한(`MAX_*`)도 여기 | 어디서나 |
 | `trips/actions.ts` | Server Actions (`"use server"`) — 모든 변경의 유일한 입구 | 서버 |
-| `trips/queries.ts` | 조회 — `getTripBySlug`(React `cache()` 로 요청당 1회), `listTrips`(뷰 `trip_summaries`), `getTripCoords`(날씨 새로고침) | 서버(`server-only`) |
+| `trips/queries.ts` | 조회 — `getTripBySlug`(React `cache()` 로 요청당 1회), `getTripGate`(입장 판정용 id·이름·비밀번호·좌표 — 날씨 새로고침도 이것 하나), `getTripPasswords`(목록 입장 표 검증), `listTrips`(뷰 `trip_summaries`) | 서버(`server-only`) |
 | `trips/mapping.ts` | DB 행 → `TripData`. **정렬을 여기서 확정**(멤버 `sort_order`, 지출 최신순) | 어디서나 |
 | `trips/slug.ts` | 여행 링크 slug 생성·검증 (12자 영숫자, DB check 와 형식 일치) | 어디서나 |
 | `supabase/server.ts` · `browser.ts` | 서버 클라이언트(secret key) / 브라우저 클라이언트(publishable key — Realtime 전용) | |
@@ -17,9 +17,10 @@
 | `music/chips.ts` · `songs.ts` | 음악 탭 칩(시대 5 × 테마 13 = 65칸)·검색어·캐시 키, 재생목록 영상 → 노래 거르기·뽑기 **순수 함수** | 어디서나 |
 | `music/youtube.ts` | YouTube 재생목록 검색 → 곡 목록 → 길이·채널 (`YOUTUBE_API_KEY`) | 서버 |
 | `music/actions.ts` | `getSongs({ era, theme })` — 칸 캐시(`music_cache`) 우선, 노래 후보 반환 | 서버 |
-| `auth/token.ts` | 관리자 세션 서명·검증(HMAC, 30일), 비밀번호 비교, 실패 횟수 제한 **순수 함수** | 서버(node:crypto) |
-| `auth/admin.ts` | `isAdmin()` — 쿠키 `nb_admin` 확인, `adminConfig()` (`ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`) | 서버(`server-only`) |
-| `auth/actions.ts` | `login(password)`·`logout()` | 서버 |
+| `auth/token.ts` | 관리자 세션·여행 입장 표 서명·검증(HMAC, 30일), 비밀번호 비교, 실패 횟수 제한 **순수 함수** | 서버(node:crypto) |
+| `auth/admin.ts` | `isAdmin()` — 쿠키 `nb_admin` 확인, `adminConfig()` (`ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`), `sessionSecret()` | 서버(`server-only`) |
+| `auth/trip-access.ts` | 여행 입장 판정 `canEnterTrip(slug, password)`·목록용 `lockedTripSlugs()`, 쿠키 `nb_trip_<slug>` | 서버(`server-only`) |
+| `auth/actions.ts` | `login(password)`·`logout()`, 여행 입장 `enterTrip(slug, password)` | 서버 |
 | `realtime/` | 여행 변경 신호 채널 `trip:<slug>` / `changed` (`notify.ts` 는 서버 전용) | |
 | `site.ts` | 앱 이름("엔빵")·설명·사이트 주소·저장소 주소·관리자 이메일(홈 사용 방법) | |
 
@@ -35,9 +36,14 @@
   `settle.test.ts` 의 불변식(잔액 합 0 · 송금 적용 후 전원 0 · 덤탱이 외 100원 단위)이 그 보증이다.
 - 나머지 1원 배분 순서는 `split` 배열 순서가 아니라 **멤버 순서**(`splitMembers`)다.
 - Server Action 은 화면 밖에서 POST 로도 불린다 → 인자는 타입을 믿지 말고 검증한다(slug 도 `unknown` 취급), 배열 입력에는 상한을 둔다.
-- **권한 (2026-10-07)**: 참여자는 로그인 없이 "slug 를 안다 = 편집"(지출·장보기·덤탱이). **새 여행·여행 삭제·설정은 관리자만** —
-  `createTrip`·`deleteTrip`·`saveSettings` 가 `requireAdmin()`/`isAdmin()` 으로 서버에서 거절한다. 화면 숨김(설정 탭·휴지통·새 여행 폼)은 편의일 뿐.
-  관리자용 액션을 새로 만들면 같은 확인을 넣는다.
+- **권한 (2026-10-07)**: 참여자는 로그인 없이 지출·장보기·덤탱이 편집 — 단 **입장 비밀번호가 있는 여행은 입장 표가 있어야 한다.**
+  모든 여행 액션이 `tripIdOf` 에서 `canEnterTrip` 으로 확인하고(`refreshWeather` 도 따로 확인), 여행 화면은 표가 없으면 데이터를 읽지 않고 입장 화면만 보낸다.
+  **새 여행·여행 삭제·설정은 관리자만** — `createTrip`·`deleteTrip`·`saveSettings` 가 `requireAdmin()`/`isAdmin()` 으로 서버에서 거절한다.
+  화면 숨김(설정 탭·휴지통·새 여행 폼)은 편의일 뿐. 여행 액션을 새로 만들면 `tripIdOf` 를 거치고, 관리자용이면 `requireAdmin()` 도 넣는다.
+- **입장 비밀번호** (2026-10-07 사용자 결정): `trips.entry_password` 평문 4~20자(관리자가 다시 볼 수 있게), null 이면 열린 여행.
+  입장 표 쿠키 = "만료시각.HMAC"(30일) — 서명에 slug 와 **지금 비밀번호의 해시**를 섞어서 비밀번호를 바꾸면 기존 표가 모두 무효. 서명 키는 `ADMIN_SESSION_SECRET` 공용
+  (서명 대상 앞머리 `trip.`·`admin.` 으로 서로 못 쓴다 — `token.test.ts`). 키가 없으면 비밀번호 있는 여행은 관리자만 들어간다.
+  틀림은 0.5초 지연 + "IP + 여행" 10분 5회. **비밀번호를 `TripData` 에 넣지 않는다** — 클라이언트로 직렬화된다(`mapping.test.ts` 가 고정). 설정 탭 값은 관리자일 때만 page 가 따로 넘긴다.
 - **관리자 세션**: 쿠키 = "만료시각.HMAC"(httpOnly·Lax·30일), 비밀번호는 쿠키에 없다. `ADMIN_SESSION_SECRET` 을 바꾸면 모든 기기 로그아웃.
   비밀번호 틀림은 0.5초 지연 + 같은 IP(`x-real-ip` 우선) 10분 5회 제한(서버 메모리라 완전하지 않음 → 긴 비밀번호). 키가 없으면 관리자 기능만 잠긴다.
   **로그아웃은 그 브라우저 쿠키만 지운다** — 서버에 세션 목록이 없어서, 쿠키 값이 새어 나갔다면 `ADMIN_SESSION_SECRET` 을 바꾸고 Redeploy 해야 끊긴다.

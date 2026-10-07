@@ -5,8 +5,8 @@ const uuid = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, "0
 
 describe("여행 날짜 규칙 — 새 여행·여행 정보 수정이 같은 규칙", () => {
   for (const [label, schema, extra] of [
-    ["newTripSchema", newTripSchema, {}],
-    ["tripInfoSchema", tripInfoSchema, { address: "" }],
+    ["newTripSchema", newTripSchema, { password: "pass1234" }],
+    ["tripInfoSchema", tripInfoSchema, { address: "", password: "" }],
   ] as const) {
     it(`${label}: 종료일이 시작일보다 빠르면 거부, 한쪽만 있으면 같은 날로 채움`, () => {
       const bad = schema.safeParse({ name: "가평", start: "2026-10-11", end: "2026-10-10", ...extra });
@@ -50,11 +50,15 @@ describe("settingsSchema — 설정 한 번에 저장", () => {
 
   it("여행 정보는 안 바뀌었으면 null, 바뀌었으면 날짜 규칙까지 적용", () => {
     expect(settingsSchema.parse(base)).toEqual(base);
-    expect(settingsSchema.parse({ ...base, trip: { name: " 양평 ", start: "2026-11-01", end: "", address: "" } }).trip).toEqual({
+    expect(
+      settingsSchema.parse({ ...base, trip: { name: " 양평 ", start: "2026-11-01", end: "", address: "", password: " pass1234 " } })
+        .trip,
+    ).toEqual({
       name: "양평",
       start: "2026-11-01",
       end: "2026-11-01",
       address: null,
+      password: "pass1234",
     });
   });
 
@@ -75,5 +79,22 @@ describe("settingsSchema — 설정 한 번에 저장", () => {
 
     const many = Array.from({ length: MAX_MEMBERS + 1 }, (_, i) => ({ name: `m${i}`, color: 0 }));
     expect(settingsSchema.safeParse({ ...base, add: many }).success).toBe(false);
+  });
+});
+
+describe("입장 비밀번호 — 새 여행은 필수 4~20자, 설정에서는 비울 수 있다", () => {
+  const trip = { name: "가평", start: "", end: "" };
+
+  it("새 여행: 비었거나 짧거나 길면 거부, 앞뒤 공백은 잘라 낸다", () => {
+    for (const password of ["", "   ", "abc", "a".repeat(21)]) expect(newTripSchema.safeParse({ ...trip, password }).success).toBe(false);
+    expect(newTripSchema.parse({ ...trip, password: " 1111 " }).password).toBe("1111");
+    expect(newTripSchema.parse({ ...trip, password: "a".repeat(20) }).password).toHaveLength(20);
+  });
+
+  it("설정: 빈 값은 열린 여행(\"\"), 그 밖에는 4~20자", () => {
+    const info = { ...trip, address: "" };
+    expect(tripInfoSchema.parse({ ...info, password: "  " }).password).toBe("");
+    expect(tripInfoSchema.safeParse({ ...info, password: "abc" }).success).toBe(false);
+    expect(tripInfoSchema.safeParse({ ...info, password: "a".repeat(21) }).success).toBe(false);
   });
 });

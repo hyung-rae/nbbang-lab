@@ -7,7 +7,7 @@ import { createTrip } from "@/lib/trips/actions";
 import { firstError, newTripSchema } from "@/lib/trips/schema";
 
 export function NewTripForm() {
-  const [form, setForm] = useState({ name: "", start: "", end: "" });
+  const [form, setForm] = useState({ name: "", start: "", end: "", password: "" });
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -47,6 +47,15 @@ export function NewTripForm() {
           start={form.start}
           end={form.end}
           onChange={(start, end) => setForm({ ...form, start, end })}
+        />
+        {/* 관리자가 친구들에게 알려 줄 값이라 가리지 않는다. 설정 탭에서 다시 보고 바꿀 수 있다 */}
+        <TextInput
+          id="n-password"
+          label="입장 비밀번호"
+          description="4~20자. 친구들이 여행에 들어올 때 입력해요."
+          autoComplete="off"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.currentTarget.value })}
         />
         {error && (
           <Text size="sm" c="red" fw={500} role="alert">

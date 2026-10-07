@@ -81,7 +81,8 @@ grep -n -B2 -A6 "taker" .claude/glossary.md           # 코드 식별자로 역�
 
 ### 여행 링크 (slug)
 - **코드 식별자**: `trips.slug`, `newSlug()`·`isValidSlug()` (`src/lib/trips/slug.ts`), 경로 `/t/[slug]`
-- **정의**: 여행마다 생기는 추측 불가한 12자 영숫자. 참여자에게는 **이 링크를 아는 것이 곧 보기·입력 권한**이다(설정·삭제 제외).
+- **정의**: 여행마다 생기는 추측 불가한 12자 영숫자. 비밀번호 없는 여행은 **이 링크를 아는 것이 곧 보기·입력 권한**이고(설정·삭제 제외),
+  입장 비밀번호가 있는 여행은 링크로 와도 입장 화면이 먼저 뜬다.
 - **혼동 주의**: 여행 id(uuid)와 다르다. 화면·Server Action 은 slug 로 받고 서버가 id 로 바꾼다(`tripIdOf`).
 
 ### 여행 목록 (trips)
@@ -92,6 +93,12 @@ grep -n -B2 -A6 "taker" .claude/glossary.md           # 코드 식별자로 역�
 - **코드 식별자**: `isAdmin()` (`src/lib/auth/admin.ts`), 쿠키 `nb_admin`, 경로 `/admin`, 화면 prop `admin`
 - **정의**: **관리자** = 비밀번호로 로그인한 사람 한 명(설정 탭·새 여행·여행 삭제). **참여자** = 여행 링크·목록으로 들어온 누구나, 로그인 없음(그 밖의 전부).
 - **혼동 주의**: 정산의 "멤버"(이름)와 다르다 — 참여자는 계정·멤버와 연결되지 않는다. 화면 숨김이 아니라 서버(`requireAdmin`)가 막는다.
+
+### 입장 비밀번호 (entry password)
+- **코드 식별자**: DB `trips.entry_password`(null = 열린 여행), 판정 `canEnterTrip()`·`lockedTripSlugs()` (`src/lib/auth/trip-access.ts`), 입장 `enterTrip()`, 쿠키 `nb_trip_<slug>`(입장 표)
+- **정의**: 관리자가 여행마다 정하는 4~20자 글자. 참여자가 그 여행에 들어가려면 한 번 입력해야 하고, 맞으면 그 기기에 30일짜리 입장 표가 생긴다.
+- **혼동 주의**: 관리자 비밀번호(`ADMIN_PASSWORD`, 로그인)와 다르다. 관리자는 입장 비밀번호 없이 모든 여행에 들어간다.
+  관리자가 다시 볼 수 있게 **평문 저장**(사용자 결정) — 화면 데이터(`TripData`)·목록 뷰에는 넣지 않는다.
 
 ## C. 부가 기능
 
