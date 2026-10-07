@@ -55,7 +55,10 @@ export function ExpenseSheet({
         content: {
           flex: "0 0 auto",
           height: "auto",
-          maxWidth: "36rem",
+          // 폭은 화면을 넘지 않게: maxWidth 를 36rem 으로만 주면 Mantine 기본 max-width(100%)를 덮어써
+          // 폰(393px)에서 시트가 576px 로 그려져 오른쪽(X·버튼)이 잘린다 (아이폰 실측)
+          width: "100%",
+          maxWidth: "min(36rem, 100%)",
           maxHeight: "92dvh",
           marginInline: "auto",
           borderRadius: "var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0",
