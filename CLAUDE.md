@@ -10,7 +10,7 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 - **MVP 동작 중 (로컬).** 여행 만들기·목록, 정산·지출·장보기·몰빵 게임·설정, 다른 화면 자동 갱신.
 - **인증 없음 (의도된 결정, 2026-10-06).** 여행 링크(slug)를 아는 누구나 보고 입력한다. `/trips` 는 DB 전체 여행을 보여 준다(임시).
   로그인 작업 때 권한 검사(`src/lib/trips/actions.ts` `tripIdOf`)·여행 목록 범위·Realtime 채널을 함께 바꾼다.
-- 남은 일: 음악(YouTube Data API v3)·예보(카카오 로컬 + Open-Meteo), 아티팩트 실데이터 이관, Vercel 배포.
+- 남은 일: 음악(YouTube Data API v3)·예보(카카오 로컬 + Open-Meteo), 아티팩트 실데이터 이관.
 
 ## 2. 기술 스택
 
@@ -21,7 +21,9 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 | DB | Supabase Postgres — 서버에서 `@supabase/supabase-js` (secret key), 브라우저는 Realtime 신호만 |
 | 검증 | zod 4 (화면·Server Action 공용 `src/lib/trips/schema.ts`) |
 | 테스트 | Vitest 5, PGlite(마이그레이션 검증) |
-| 배포 | Vercel (예정) |
+| 배포 | Vercel — GitHub 연동(PR → 미리보기, `main` → 프로덕션), 함수 리전 서울 `icn1`(`vercel.json`, Supabase 와 같은 지역) |
+| CI | GitHub Actions `.github/workflows/ci.yml` — PR·`main` push 마다 lint·typecheck·test·build (DB·비밀 키 없이) |
+| 저장소 | **공개** GitHub `hyungrae94/nbbang-lab` |
 | 패키지 | npm (`.claude/settings.json` 허용 목록이 npm 기준) |
 
 ## 3. 명령어
@@ -41,6 +43,7 @@ src/app/            라우트 — / (새 여행) · /trips (목록) · /t/[slug]
 src/components/     화면 — trip/(여행 화면 탭·시트) · game/ · form/(날짜·선택) · trips/ · home/ · ui/(shadcn 생성물)
 src/lib/            도메인 순수 함수(domain/) · 서버 데이터 계층(trips/·supabase/·realtime/) · site.ts
 supabase/           마이그레이션 SQL · 스키마 테스트
+.github/workflows/  CI
 ```
 
 디렉터리별 세부는 각 `CLAUDE.md`: [src/lib](src/lib/CLAUDE.md) · [src/components](src/components/CLAUDE.md) · [supabase](supabase/CLAUDE.md).
@@ -73,6 +76,8 @@ supabase/           마이그레이션 SQL · 스키마 테스트
 - `create-next-app` 은 `.claude/`·`CLAUDE.md` 가 있는 폴더에 바로 만들지 못한다 — 다시 만들 일이 있으면 scratchpad 에 만든 뒤 복사한다.
 - `rm -rf` 는 `.claude/settings.json` 에서 막혀 있다. 파일 단위 `rm` 을 쓴다.
 - 새 마이그레이션은 Supabase 대시보드 SQL Editor 로 **사용자가 적용**한다 (CLI 미사용). 적용 전에는 그 기능이 실패한다.
+- **공개 저장소다.** 원형 아티팩트 링크·실제 숙소 주소·친구 실데이터를 파일·커밋 메시지·PR 에 쓰지 않는다(2026-10-07 기록에서 제거함). 테스트 데이터는 예시 값으로.
+- Node 는 `package.json` `engines` 24.x — CI(`node-version-file`)·Vercel 이 이 값을 따른다.
 
 ## 8. 협업 문서 체계
 
