@@ -1,87 +1,79 @@
-# 엔빵 — 친구 여행 가계부
+<p align="center">
+  <img src="public/icon-192.png" width="96" alt="엔빵 아이콘" />
+</p>
 
-여행 가서 친구들과 같이 쓴 돈을 적으면 **누가 누구에게 얼마를 보내면 되는지** 바로 보여 주는 웹앱입니다.
-여행 링크 하나로 친구들이 로그인 없이 함께 적고, 누가 입력하면 같은 여행을 연 모든 화면이 바로 바뀝니다.
+<h1 align="center">엔빵</h1>
 
-## 주요 기능
+<p align="center"><b>여행가서 친구들끼리 쓰는 가계부</b></p>
 
-- **정산** — 지출마다 1원 단위로 N빵 → 사람별 잔액 → 송금은 100원 단위로 정리(끝전은 "덤탱이 쓸 사람"이 냄) → 최소 송금, 분류별 지출 트리맵
-- **지출 내역** — 날짜별 기록, 낸 사람과 나눌 사람 지정
-- **장보기** — 분류별 체크리스트, 장 본 금액은 바로 지출로
-- **몰빵 게임** — 룰렛·사다리·폭탄·카드로 한 사람 몰아주기
-- **숙소 지금 날씨** — 숙소 주소로 좌표를 찾아 현재 날씨·체감 온도, 새로고침
-- **여행 플레이리스트** — 시대·테마(드라이브·캠핑·발라드…)를 고르면 YouTube 재생목록에서 국내 노래 7곡
-- **실시간 갱신** — 다른 사람이 입력하면 새로고침 없이 반영
+<p align="center">
+같이 쓴 돈을 적으면 누가 누구에게 얼마를 보내면 되는지 바로 보여 줘요.<br />
+1원 단위로 나누고, 송금은 100원 단위로 깔끔하게.
+</p>
 
-## 권한
+---
 
-| | 관리자 (한 명, 비밀번호 로그인) | 참여자 (여행 링크를 받은 누구나, 로그인 없음) |
-|---|---|---|
-| 정산·지출·장보기·게임·음악 | ✅ | ✅ |
-| 여행 목록 보기·들어가기 | ✅ | ✅ |
-| 설정(여행 정보·멤버) · 새 여행 · 여행 삭제 | ✅ | ❌ |
+## 이런 앱이에요
 
-> ⚠️ 여행 목록이 공개라서 **사이트 주소를 아는 누구나 모든 여행을 열고 입력할 수 있습니다**(친구들끼리 쓰는 앱이라 감수한 결정).
-> 사이트 주소는 함께 쓰는 사람에게만 알려 주세요. 관리자 로그인 화면은 링크로 노출하지 않고 `/admin` 으로 직접 들어갑니다.
+여행 링크 하나로 친구들이 **로그인 없이** 함께 적고, 누가 입력하면 **모두의 화면이 바로 바뀌어요.**
+정산만 하는 게 아니라 장보기 목록 · 몰빵 게임 · 숙소 날씨 · 여행 플레이리스트까지 여행 내내 한 화면에서 써요.
 
-## 기술 스택
+## 할 수 있는 것
 
-| 영역 | 사용 |
+| | |
 |---|---|
-| 프레임워크 | Next.js 16 (App Router), React 19, TypeScript |
-| UI | Mantine 9 + CSS Modules, lucide-react |
-| DB | Supabase Postgres (서버에서만 접근), Supabase Realtime (변경 신호) |
-| 검증 | zod |
-| 테스트 | Vitest, PGlite (마이그레이션·DB 함수 검증) |
-| 외부 API | NAVER Cloud Maps Geocoding, Open-Meteo, YouTube Data API v3 |
-| 배포 | Vercel (서울 리전 `icn1`), GitHub Actions CI |
+| 💸 **정산** | 지출마다 1원 단위로 N빵하고, 사람별로 모아 **최소한의 송금**만 남겨요. 송금은 100원 단위로 정리하고, 남는 끝전은 그 여행의 "덤탱이 쓸 사람"이 내요. 어디에 많이 썼는지 분류별로도 한눈에. |
+| 🧾 **지출 내역** | 날짜별로 적고, 낸 사람과 나눌 사람을 골라요. 같이 안 먹은 사람은 빼면 돼요. |
+| 🛒 **장보기** | 분류별 체크리스트로 같이 장 보고, 장 본 금액은 바로 지출로 넘겨요. |
+| 🎲 **몰빵 게임** | 룰렛 · 사다리 · 폭탄 · 카드로 한 사람에게 몰아주기. |
+| ⛅ **숙소 지금 날씨** | 숙소 주소만 넣어 두면 지금 날씨와 체감 온도를 보여 줘요. |
+| 🎵 **여행 플레이리스트** | 시대와 테마(드라이브 · 캠핑 · 발라드 …)를 고르면 어울리는 국내 노래를 골라 줘요. |
+| 🔄 **실시간 갱신** | 친구가 입력하면 새로고침 없이 내 화면에도 바로 반영돼요. |
 
-## 시작하기
+## 사용 방법
 
-Node.js 24 가 필요합니다.
+1. 엔빵 첫 화면에 있는 관리자 이메일로 여행을 신청해 주세요.
+2. 관리자가 **여행 링크**와 그 여행의 **입장 비밀번호**를 보내 드려요.
+3. 링크로 들어가거나 여행 목록에서 그 여행을 골라 비밀번호를 입력하면 시작이에요.
+   한 번 입력한 기기는 30일 동안 다시 묻지 않아요.
+
+### 여행 신청할 때 적어 주세요
+
+- 여행 일정
+- 장소 (숙소 주소를 주시면 날씨도 볼 수 있어요)
+- 참여 인원 — 최대 12명, 이름이나 닉네임으로 한 사람당 4글자 이하
+
+## 누가 무엇을 할 수 있나요
+
+| | 관리자 (한 명) | 참여자 (입장 비밀번호를 받은 누구나) |
+|---|---|---|
+| 정산 · 지출 · 장보기 · 게임 · 음악 | ✅ | ✅ |
+| 여행 만들기 · 설정(여행 정보 · 멤버 · 입장 비밀번호) · 삭제 | ✅ | — |
+
+참여자는 계정이 필요 없어요. 입장 비밀번호가 바뀌면 이미 들어와 있던 기기도 다시 입력해야 해요.
+여행 목록에는 모든 여행의 이름 · 인원 · 합계가 보여요.
+
+---
+
+<details>
+<summary><b>개발자용 — 직접 띄워 보기</b></summary>
+
+Next.js 16 · React 19 · Mantine 9 · Supabase(Postgres + Realtime) · Vercel. Node.js 24 가 필요합니다.
 
 ```bash
 npm install
-cp .env.example .env.local   # 값 채우기 — 아래 환경변수
+cp .env.example .env.local   # 값 채우기 — 설명은 .env.example 에
 npm run dev                   # http://localhost:3000
 ```
 
-1. Supabase 프로젝트를 만들고 `supabase/migrations/*.sql` 을 **파일명 순서대로** SQL Editor 에서 실행합니다.
-2. `.env.local` 을 채웁니다. 설명은 [`.env.example`](.env.example) 에 있습니다.
+- Supabase 프로젝트를 만들고 `supabase/migrations/*.sql` 을 **파일명 순서대로** SQL Editor 에서 실행합니다.
+- `npm test` · `npm run typecheck` · `npm run lint` · `npm run build`
+- 개발 규칙과 함정은 [CLAUDE.md](CLAUDE.md) 와 디렉터리별 `CLAUDE.md` 에 있습니다.
 
-| 환경변수 | 용도 | 없으면 |
-|---|---|---|
-| `SUPABASE_URL` · `SUPABASE_SECRET_KEY` | 서버 DB 접근 | 앱이 동작하지 않음 |
-| `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 실시간 갱신 신호 (DB 권한 없음) | 자동 갱신만 꺼짐 |
-| `ADMIN_PASSWORD` · `ADMIN_SESSION_SECRET` | 관리자 로그인 | 관리자 기능 잠김 |
-| `NAVER_MAPS_API_KEY_ID` · `NAVER_MAPS_API_KEY` | 숙소 주소 → 좌표 | 날씨 줄 숨김 |
-| `YOUTUBE_API_KEY` | 음악 탭 | 음악 탭 "준비 중" |
-
-`NEXT_PUBLIC_` 이 붙지 않은 키는 모두 서버 전용입니다.
-
-## 명령어
-
-```bash
-npm run dev         # 개발 서버
-npm test            # 단위 테스트 + 스키마 테스트
-npm run typecheck   # next typegen && tsc --noEmit
-npm run lint
-npm run build
-```
-
-## 구조
-
-```
-src/app/          라우트 — / · /trips · /t/[slug] · /admin
-src/components/   화면 (trip/ · game/ · music/ · form/ · trips/ · home/ · auth/)
-src/lib/          정산 등 순수 함수(domain/) · 서버 데이터(trips/ · supabase/ · realtime/) · 외부 API(weather/ · music/) · 인증(auth/)
-supabase/         마이그레이션 SQL · 스키마 테스트
-```
-
-개발 규칙과 함정은 [CLAUDE.md](CLAUDE.md) 와 디렉터리별 `CLAUDE.md`([src/lib](src/lib/CLAUDE.md) · [src/components](src/components/CLAUDE.md) · [supabase](supabase/CLAUDE.md))에 있습니다.
+</details>
 
 ## 데이터 출처
 
 - 날씨: [Open-Meteo](https://open-meteo.com/) (CC BY 4.0)
 - 좌표: NAVER Cloud Platform Maps
-- 노래 정보: YouTube Data API — 곡 정보만 보여 주고 재생하지 않습니다
+- 노래 정보: YouTube Data API — 곡 정보만 보여 주고 재생하지 않아요
