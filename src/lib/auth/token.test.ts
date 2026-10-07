@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { FailureLimiter, SESSION_DAYS, samePassword, signSession, verifySession } from "./token";
+import {
+  FailureLimiter,
+  SESSION_DAYS,
+  samePassword,
+  signSession,
+  signTripPass,
+  verifySession,
+  verifyTripPass,
+} from "./token";
 
 const secret = "x".repeat(40);
 const now = Date.UTC(2026, 9, 7);
@@ -23,6 +31,36 @@ describe("세션 서명", () => {
     expect(verifySession("", secret, now)).toBe(false);
     expect(verifySession("abc.def", secret, now)).toBe(false);
     expect(verifySession(`${exp}.${sig}.extra`, secret, now)).toBe(false);
+  });
+});
+
+describe("여행 입장 표", () => {
+  const slug = "abcdefghijkl";
+
+  it("같은 여행·같은 비밀번호·만료 전에만 유효", () => {
+    const t = signTripPass(secret, slug, "pass1234", now);
+    expect(verifyTripPass(t, secret, slug, "pass1234", now)).toBe(true);
+    expect(verifyTripPass(t, secret, slug, "pass1234", now + SESSION_DAYS * DAY - 1)).toBe(true);
+    expect(verifyTripPass(t, secret, slug, "pass1234", now + SESSION_DAYS * DAY)).toBe(false);
+  });
+
+  it("비밀번호를 바꾸면·다른 여행이면·다른 키면 무효", () => {
+    const t = signTripPass(secret, slug, "pass1234", now);
+    expect(verifyTripPass(t, secret, slug, "newpass1", now)).toBe(false);
+    expect(verifyTripPass(t, secret, "otherslug000", "pass1234", now)).toBe(false);
+    expect(verifyTripPass(t, "y".repeat(40), slug, "pass1234", now)).toBe(false);
+  });
+
+  it("관리자 세션 쿠키 값으로는 여행에 못 들어가고, 그 반대도 안 된다", () => {
+    expect(verifyTripPass(signSession(secret, now), secret, slug, "pass1234", now)).toBe(false);
+    expect(verifySession(signTripPass(secret, slug, "pass1234", now), secret, now)).toBe(false);
+  });
+
+  it("변조·형식 오류는 무효", () => {
+    const [exp, sig] = signTripPass(secret, slug, "pass1234", now).split(".");
+    expect(verifyTripPass(`${Number(exp) + DAY}.${sig}`, secret, slug, "pass1234", now)).toBe(false);
+    expect(verifyTripPass("", secret, slug, "pass1234", now)).toBe(false);
+    expect(verifyTripPass(`${exp}.${sig}.x`, secret, slug, "pass1234", now)).toBe(false);
   });
 });
 

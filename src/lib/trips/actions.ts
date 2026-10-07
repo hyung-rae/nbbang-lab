@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/auth/admin";
+import { canEnterTrip } from "@/lib/auth/trip-access";
 import { notifyTripChanged } from "@/lib/realtime/notify";
 import { supabaseServer } from "@/lib/supabase/server";
 import { geocode } from "@/lib/weather/geocode";
@@ -17,13 +18,14 @@ import {
   settingsSchema,
   shoppingSchema,
 } from "./schema";
-import { isValidSlug, newSlug } from "./slug";
+import { getTripGate } from "./queries";
+import { newSlug } from "./slug";
 
 /*
  * 여행 데이터 변경. Server Action 은 화면 밖에서도 POST 로 호출될 수 있으므로 모든 입력을 다시 검증하고,
  * 대상 행이 그 slug 의 여행에 속하는지 trip_id 로 한 번 더 묶는다.
- * 권한 (2026-10-07 결정): 참여자는 로그인 없이 "slug 를 안다 = 지출·장보기·덤탱이 편집 가능".
- * 새 여행·여행 삭제·설정은 관리자만 — requireAdmin() 으로 서버에서 거절한다(화면 숨김은 편의일 뿐).
+ * 권한 (2026-10-07 결정): 참여자는 로그인 없이 지출·장보기·덤탱이 편집 가능 — 단 입장 비밀번호가 있는 여행은
+ * 입장 표(쿠키)가 있어야 한다(tripIdOf 가 모든 액션에서 확인). 새 여행·여행 삭제·설정은 관리자만 — requireAdmin().
  */
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -31,6 +33,7 @@ export type ActionResult = { ok: true } | { ok: false; error: string };
 const FAIL = "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.";
 const NOT_FOUND = "여행을 찾을 수 없어요. 링크를 다시 확인해 주세요.";
 const ADMIN_ONLY = "관리자만 할 수 있어요.";
+const LOCKED = "여행 입장 비밀번호를 먼저 입력해 주세요.";
 const uuid = z.uuid();
 
 class UserError extends Error {}
@@ -39,12 +42,13 @@ async function requireAdmin(): Promise<void> {
   if (!(await isAdmin())) throw new UserError(ADMIN_ONLY);
 }
 
+/** slug → 여행 id. 입장 비밀번호가 있는 여행은 입장 표가 있어야 한다(관리자는 통과) — 모든 여행 액션이 여기를 거친다 */
 async function tripIdOf(slug: unknown): Promise<string> {
-  if (typeof slug !== "string" || !isValidSlug(slug)) throw new UserError(NOT_FOUND);
-  const { data, error } = await supabaseServer().from("trips").select("id").eq("slug", slug).maybeSingle();
-  if (error) throw error;
-  if (!data) throw new UserError(NOT_FOUND);
-  return data.id;
+  if (typeof slug !== "string") throw new UserError(NOT_FOUND);
+  const gate = await getTripGate(slug);
+  if (!gate) throw new UserError(NOT_FOUND);
+  if (!(await canEnterTrip(slug, gate.password))) throw new UserError(LOCKED);
+  return gate.id;
 }
 
 function check<T>(schema: z.ZodType<T>, input: unknown): T {
@@ -82,19 +86,19 @@ function throwIf(error: unknown) {
 
 // ---------------------------------------------------------------- 여행
 
-/** 새 여행을 만들고 그 링크로 이동한다 */
-export async function createTrip(input: { name: string; start: string; end: string }): Promise<ActionResult> {
+/** 새 여행을 만들고 그 링크로 이동한다. 입장 비밀번호는 필수 */
+export async function createTrip(input: { name: string; start: string; end: string; password: string }): Promise<ActionResult> {
   if (!(await isAdmin())) return { ok: false, error: ADMIN_ONLY };
   const parsed = newTripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
-  const { name, start, end } = parsed.data;
+  const { name, start, end, password } = parsed.data;
 
   let slug = "";
   for (let attempt = 0; attempt < 3 && !slug; attempt++) {
     const candidate = newSlug();
     const { error } = await supabaseServer()
       .from("trips")
-      .insert({ slug: candidate, name, start_date: start, end_date: end });
+      .insert({ slug: candidate, name, start_date: start, end_date: end, entry_password: password });
     if (!error) slug = candidate;
     else if (error.code !== "23505") {
       console.error("[createTrip]", error);

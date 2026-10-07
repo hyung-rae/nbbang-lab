@@ -27,7 +27,18 @@ function withDateRules<T extends z.ZodType<{ start: string | null; end: string |
   );
 }
 
-export const newTripSchema = withDateRules(tripBase);
+/** 글자 수 — DB char_length 처럼 코드 포인트로 센다(이모지 하나 = 1자. string.length 는 2로 세서 DB check 와 어긋난다) */
+const charCount = (v: string) => Array.from(v).length;
+const PASSWORD_LENGTH = "입장 비밀번호는 4~20자로 적어 주세요.";
+
+/** 여행 입장 비밀번호 — 자유 글자 4~20자(2026-10-07 사용자 결정). 앞뒤 공백은 저장·입장 모두 잘라 낸다. DB check 와 같은 길이 */
+export const tripPasswordSchema = z
+  .string()
+  .trim()
+  .refine((v) => charCount(v) >= 4 && charCount(v) <= 20, PASSWORD_LENGTH);
+
+// 새 여행은 비밀번호 필수
+export const newTripSchema = withDateRules(tripBase.extend({ password: tripPasswordSchema }));
 
 export const tripInfoSchema = withDateRules(
   tripBase.extend({
@@ -36,6 +47,13 @@ export const tripInfoSchema = withDateRules(
       .trim()
       .max(100, "주소는 100자까지 적을 수 있어요.")
       .transform((v) => v || null),
+    // 고쳤을 때만 보낸다 — 키가 없으면 DB 가 그대로 둔다(다른 탭의 옛 값으로 되돌리지 않게, 코드 리뷰).
+    // 비울 수 있다 — 빈 값이면 비밀번호 없이 들어오는 열린 여행(DB 가 null 로 저장)
+    password: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || (charCount(v) >= 4 && charCount(v) <= 20), PASSWORD_LENGTH)
+      .optional(),
   }),
 );
 export type TripInfoInput = z.input<typeof tripInfoSchema>;

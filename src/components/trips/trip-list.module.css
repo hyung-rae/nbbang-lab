@@ -9,3 +9,9 @@
 .card {
   overflow: hidden;
 }
+
+/* 입장 비밀번호가 있는 여행 — 이름 옆 자물쇠 */
+.lock {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+}

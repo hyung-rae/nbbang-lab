@@ -38,6 +38,7 @@ export function TripApp({
   today,
   weather,
   admin,
+  entryPassword = null,
 }: {
   data: TripData;
   today: string;
@@ -45,6 +46,8 @@ export function TripApp({
   weather: Promise<CurrentWeather | null>;
   /** 관리자만 설정 탭을 본다 (서버 saveSettings 도 관리자만 받는다) */
   admin: boolean;
+  /** 입장 비밀번호 — 설정 탭에서 보이고 고치도록 관리자일 때만 서버가 넘긴다(참여자에게는 늘 null) */
+  entryPassword?: string | null;
 }) {
   const [picked, setTab] = useState<Tab>("settle");
   // 설정 탭에 있다가 관리자 세션이 끝나면(새로 받은 props) 정산으로
@@ -65,7 +68,7 @@ export function TripApp({
   };
 
   let body: React.ReactNode;
-  if (tab === "settings") body = <SettingsTab data={data} />;
+  if (tab === "settings") body = <SettingsTab data={data} entryPassword={entryPassword} />;
   else if (tab === "shop")
     body = (
       <ShopTab

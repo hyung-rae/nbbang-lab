@@ -20,11 +20,11 @@ import {
   useAction,
 } from "./parts";
 
-export function SettingsTab({ data }: { data: TripData }) {
-  return <SettingsForm data={data} />;
+export function SettingsTab({ data, entryPassword }: { data: TripData; entryPassword: string | null }) {
+  return <SettingsForm data={data} entryPassword={entryPassword} />;
 }
 
-type TripFields = { name: string; start: string; end: string; address: string };
+type TripFields = { name: string; start: string; end: string; address: string; password: string };
 type NewMember = { key: string; name: string; color: number };
 /** 목록 한 줄: 지금 멤버(색은 고친 값) 또는 저장 전 새 멤버 */
 type Row = { kind: "member"; member: Member } | { kind: "new"; member: Member; key: string };
@@ -34,9 +34,15 @@ type Row = { kind: "member"; member: Member } | { kind: "new"; member: Member; k
  * 실시간 갱신으로 data 가 바뀌어도 맞도록 "바뀐 것만" 들고 나머지는 지금 값을 보여 준다
  * — 고친 여행 정보 칸 · 뺄 멤버 id · 바꾼 색 · 새 멤버. 그사이 다른 곳에서 사라진 멤버에 대한 편집은 걸러 낸다.
  */
-function SettingsForm({ data }: { data: TripData }) {
+function SettingsForm({ data, entryPassword }: { data: TripData; entryPassword: string | null }) {
   const t = data.trip;
-  const current: TripFields = { name: t.name, start: t.start ?? "", end: t.end ?? "", address: t.address ?? "" };
+  const current: TripFields = {
+    name: t.name,
+    start: t.start ?? "",
+    end: t.end ?? "",
+    address: t.address ?? "",
+    password: entryPassword ?? "",
+  };
   const [tripEdits, setTripEdits] = useState<Partial<TripFields>>({});
   const [removed, setRemoved] = useState<string[]>([]);
   const [colorEdits, setColorEdits] = useState<Record<string, number>>({});
@@ -112,8 +118,10 @@ function SettingsForm({ data }: { data: TripData }) {
   }
 
   function submit() {
+    // 비밀번호는 고쳤을 때만 싣는다 — 안 고친 칸까지 보내면 그사이 다른 탭에서 바꾼 비밀번호를 이 화면의 옛 값으로 되돌린다
+    const { password, ...info } = form;
     const input = {
-      trip: tripChanged ? form : null,
+      trip: tripChanged ? (tripEdits.password !== undefined ? { ...info, password } : info) : null,
       remove: removeIds,
       colors: colorChanges,
       add: added.map(({ name, color }) => ({ name, color })),
@@ -158,6 +166,15 @@ function SettingsForm({ data }: { data: TripData }) {
                   placeholder="예: 경기 가평군 설악면 …"
                   value={form.address}
                   onChange={set("address")}
+                />
+                {/* 관리자가 다시 보고 친구들에게 알려 주도록 가리지 않는다(사용자 결정). 바꾸면 이미 들어온 기기도 다시 입력해야 한다 */}
+                <TextInput
+                  id="t-password"
+                  label="입장 비밀번호"
+                  description="4~20자. 바꾸면 이미 들어온 친구들도 다시 입력해야 해요. 비우면 비밀번호 없이 들어와요."
+                  autoComplete="off"
+                  value={form.password}
+                  onChange={set("password")}
                 />
               </Stack>
             </Paper>
