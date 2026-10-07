@@ -83,6 +83,12 @@ describe("toTripData", () => {
     });
     expect(toTripData({ ...base, forecast: { broken: true } }).forecast).toBeNull();
   });
+
+  it("좌표는 위도·경도가 둘 다 있을 때만", () => {
+    expect(d.coords).toBeNull();
+    expect(toTripData({ ...base, lat: 37.6, lng: 127.5 }).coords).toEqual({ lat: 37.6, lng: 127.5 });
+    expect(toTripData({ ...base, lat: 37.6 }).coords).toBeNull();
+  });
 });
 
 describe("slug", () => {

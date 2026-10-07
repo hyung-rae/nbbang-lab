@@ -16,6 +16,14 @@ export const getTripBySlug = cache(async (slug: string): Promise<TripData | null
   return data ? toTripData(data as unknown as TripQueryRow) : null;
 });
 
+/** 여행 숙소 좌표만 (날씨 새로고침용). 여행이 없거나 좌표가 없으면 null */
+export async function getTripCoords(slug: string): Promise<{ lat: number; lng: number } | null> {
+  if (!isValidSlug(slug)) return null;
+  const { data, error } = await supabaseServer().from("trips").select("lat, lng").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data?.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null;
+}
+
 export interface TripSummary {
   slug: string;
   name: string;
