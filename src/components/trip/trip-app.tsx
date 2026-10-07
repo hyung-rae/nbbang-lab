@@ -37,13 +37,19 @@ export function TripApp({
   data,
   today,
   weather,
+  admin,
 }: {
   data: TripData;
   today: string;
   /** 서버가 기다리지 않고 넘기는 숙소 지금 날씨 — 티켓이 Suspense 로 따로 기다린다 */
   weather: Promise<CurrentWeather | null>;
+  /** 관리자만 설정 탭을 본다 (서버 saveSettings 도 관리자만 받는다) */
+  admin: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("settle");
+  const [picked, setTab] = useState<Tab>("settle");
+  // 설정 탭에 있다가 관리자 세션이 끝나면(새로 받은 props) 정산으로
+  const tab: Tab = !admin && picked === "settings" ? "settle" : picked;
+  const tabs = admin ? TABS : TABS.filter(([id]) => id !== "settings");
   const [sheet, setSheet] = useState<SheetState>({ open: false });
   const [last, setLast] = useState<{ date?: string; payerId: string | null }>({ payerId: null });
 
@@ -72,8 +78,14 @@ export function TripApp({
   else if (noMembers)
     body = (
       <Empty title="함께 가는 사람이 아직 없어요">
-        <Text size="sm">설정에서 친구들을 먼저 추가해 주세요.</Text>
-        <Button onClick={goSettings}>친구 추가하러 가기</Button>
+        {admin ? (
+          <>
+            <Text size="sm">설정에서 친구들을 먼저 추가해 주세요.</Text>
+            <Button onClick={goSettings}>친구 추가하러 가기</Button>
+          </>
+        ) : (
+          <Text size="sm">관리자가 함께 가는 사람을 추가하면 쓸 수 있어요.</Text>
+        )}
       </Empty>
     );
   else if (tab === "game")
@@ -92,7 +104,7 @@ export function TripApp({
   return (
     <>
       <PageShell pb="calc(170px + env(safe-area-inset-bottom))" gap={22}>
-        <AppHeader />
+        <AppHeader admin={admin} sharePath={`/t/${data.slug}`} />
         <Ticket data={data} today={today} total={result.total} weather={weather} />
         <Stack role="tabpanel" gap={36}>
           {body}
@@ -111,7 +123,7 @@ export function TripApp({
             </Button>
           )}
           <div role="tablist" className={classes.tabs}>
-            {TABS.map(([id, label]) => (
+            {tabs.map(([id, label]) => (
               <UnstyledButton
                 key={id}
                 role="tab"

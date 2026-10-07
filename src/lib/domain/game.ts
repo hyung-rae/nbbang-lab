@@ -1,8 +1,5 @@
 // 몰빵 게임 로직 — 화면에서만 돌고 저장하지 않는다 (명세 게임 탭 절). 화면 코드와 분리해 테스트한다.
 
-export const MISSIONS = ["이번 계산", "설거지", "고기 굽기", "심부름"] as const;
-export type Mission = (typeof MISSIONS)[number];
-
 /** [0, n) 정수 */
 export type RandInt = (n: number) => number;
 

@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
+import { isAdmin } from "@/lib/auth/admin";
 import { notifyTripChanged } from "@/lib/realtime/notify";
 import { supabaseServer } from "@/lib/supabase/server";
 import { geocode } from "@/lib/weather/geocode";
@@ -21,16 +22,22 @@ import { isValidSlug, newSlug } from "./slug";
 /*
  * 여행 데이터 변경. Server Action 은 화면 밖에서도 POST 로 호출될 수 있으므로 모든 입력을 다시 검증하고,
  * 대상 행이 그 slug 의 여행에 속하는지 trip_id 로 한 번 더 묶는다.
- * 권한 검사: 인증 도입 전이라 "slug 를 안다 = 편집 가능" (plan.md 확정 사항). 인증을 붙이면 tripIdOf 에서 검사한다.
+ * 권한 (2026-10-07 결정): 참여자는 로그인 없이 "slug 를 안다 = 지출·장보기·덤탱이 편집 가능".
+ * 새 여행·여행 삭제·설정은 관리자만 — requireAdmin() 으로 서버에서 거절한다(화면 숨김은 편의일 뿐).
  */
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 const FAIL = "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.";
 const NOT_FOUND = "여행을 찾을 수 없어요. 링크를 다시 확인해 주세요.";
+const ADMIN_ONLY = "관리자만 할 수 있어요.";
 const uuid = z.uuid();
 
 class UserError extends Error {}
+
+async function requireAdmin(): Promise<void> {
+  if (!(await isAdmin())) throw new UserError(ADMIN_ONLY);
+}
 
 async function tripIdOf(slug: unknown): Promise<string> {
   if (typeof slug !== "string" || !isValidSlug(slug)) throw new UserError(NOT_FOUND);
@@ -77,6 +84,7 @@ function throwIf(error: unknown) {
 
 /** 새 여행을 만들고 그 링크로 이동한다 */
 export async function createTrip(input: { name: string; start: string; end: string }): Promise<ActionResult> {
+  if (!(await isAdmin())) return { ok: false, error: ADMIN_ONLY };
   const parsed = newTripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   const { name, start, end } = parsed.data;
@@ -100,6 +108,7 @@ export async function createTrip(input: { name: string; start: string; end: stri
 /** 여행 삭제 — 멤버·지출·장보기까지 함께 지워진다(cascade). 되돌릴 수 없다 */
 export async function deleteTrip(slug: string): Promise<ActionResult> {
   return run(slug, async () => {
+    await requireAdmin();
     const tripId = await tripIdOf(slug);
     const { error } = await supabaseServer().from("trips").delete().eq("id", tripId);
     throwIf(error);
@@ -112,6 +121,7 @@ export async function deleteTrip(slug: string): Promise<ActionResult> {
  */
 export async function saveSettings(slug: string, input: unknown): Promise<ActionResult> {
   return run(slug, async () => {
+    await requireAdmin();
     const s = check(settingsSchema, input);
     const tripId = await tripIdOf(slug);
     const before = s.trip ? await placeOf(tripId) : null;

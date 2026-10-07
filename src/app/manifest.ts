@@ -10,6 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "ko",
     start_url: "/",
     display: "standalone",
+    // Mantine 기본 팔레트 값(gray-0·teal-filled)을 그대로 박았다 — 테마 색을 바꾸면 같이 바꾼다
     background_color: "#f8f9fa",
     theme_color: "#12b886",
     icons: [

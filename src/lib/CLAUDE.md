@@ -17,6 +17,9 @@
 | `music/chips.ts` · `songs.ts` | 음악 탭 칩(시대 5 × 테마 13 = 65칸)·검색어·캐시 키, 재생목록 영상 → 노래 거르기·뽑기 **순수 함수** | 어디서나 |
 | `music/youtube.ts` | YouTube 재생목록 검색 → 곡 목록 → 길이·채널 (`YOUTUBE_API_KEY`) | 서버 |
 | `music/actions.ts` | `getSongs({ era, theme })` — 칸 캐시(`music_cache`) 우선, 노래 후보 반환 | 서버 |
+| `auth/token.ts` | 관리자 세션 서명·검증(HMAC, 30일), 비밀번호 비교, 실패 횟수 제한 **순수 함수** | 서버(node:crypto) |
+| `auth/admin.ts` | `isAdmin()` — 쿠키 `nb_admin` 확인, `adminConfig()` (`ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`) | 서버(`server-only`) |
+| `auth/actions.ts` | `login(password)`·`logout()` | 서버 |
 | `realtime/` | 여행 변경 신호 채널 `trip:<slug>` / `changed` (`notify.ts` 는 서버 전용) | |
 | `site.ts` | 앱 이름("엔빵")·설명·사이트 주소 | |
 
@@ -32,7 +35,13 @@
   `settle.test.ts` 의 불변식(잔액 합 0 · 송금 적용 후 전원 0 · 덤탱이 외 100원 단위)이 그 보증이다.
 - 나머지 1원 배분 순서는 `split` 배열 순서가 아니라 **멤버 순서**(`splitMembers`)다.
 - Server Action 은 화면 밖에서 POST 로도 불린다 → 인자는 타입을 믿지 말고 검증한다(slug 도 `unknown` 취급), 배열 입력에는 상한을 둔다.
-  권한 검사가 생기면 `tripIdOf` 에 넣는다.
+- **권한 (2026-10-07)**: 참여자는 로그인 없이 "slug 를 안다 = 편집"(지출·장보기·덤탱이). **새 여행·여행 삭제·설정은 관리자만** —
+  `createTrip`·`deleteTrip`·`saveSettings` 가 `requireAdmin()`/`isAdmin()` 으로 서버에서 거절한다. 화면 숨김(설정 탭·휴지통·새 여행 폼)은 편의일 뿐.
+  관리자용 액션을 새로 만들면 같은 확인을 넣는다.
+- **관리자 세션**: 쿠키 = "만료시각.HMAC"(httpOnly·Lax·30일), 비밀번호는 쿠키에 없다. `ADMIN_SESSION_SECRET` 을 바꾸면 모든 기기 로그아웃.
+  비밀번호 틀림은 0.5초 지연 + 같은 IP(`x-real-ip` 우선) 10분 5회 제한(서버 메모리라 완전하지 않음 → 긴 비밀번호). 키가 없으면 관리자 기능만 잠긴다.
+  **로그아웃은 그 브라우저 쿠키만 지운다** — 서버에 세션 목록이 없어서, 쿠키 값이 새어 나갔다면 `ADMIN_SESSION_SECRET` 을 바꾸고 Redeploy 해야 끊긴다.
+- **`isAdmin()` 은 설정이 없어도 쿠키를 먼저 읽는다** — 일찍 return 하면 키 없는 빌드에서 홈·로그인 페이지가 정적으로 굳어 관리자 화면이 안 나온다(빌드 표에서 ƒ 확인).
 - 설정 화면은 `saveSettings` 하나로 여행 정보·멤버 추가·빼기·색을 **한 트랜잭션**(DB 함수 `save_trip_settings`)에 저장한다. 멤버 개별 추가·빼기 액션은 없다.
 - **숙소 좌표는 `saveSettings` 가 DB 함수 저장 뒤에 따로 채운다**(`fillCoords`) — **여행 정보(이름·날짜·주소)를 함께 저장할 때만**, 주소가 바뀌었거나 주소는 있는데 좌표가 없으면 지오코딩.
   멤버만 바꾼 저장(`trip: null`)은 건드리지 않는다 — 좌표 없는 기존 여행은 여행 정보를 한 번 저장해야 채워진다. 저장 전 주소 읽기가 실패하면 좌표만 건너뛴다.
@@ -53,5 +62,7 @@
 - "읽고 → 계산 → 넣기"(개수 제한, 다음 순서 번호)는 앱에서 하지 않고 DB 함수로 원자적으로 한다 (`supabase/CLAUDE.md`).
 - "오늘"은 `todayIn("Asia/Seoul")` — 서버(Vercel)가 UTC 라 그냥 `new Date()` 면 자정 전후 D-day 가 하루 어긋난다.
 - `refresh()`(next/cache)는 **Server Action 안에서만** 쓸 수 있다. `revalidatePath` 는 지금 "방문했던 모든 페이지 갱신" 동작이라 쓰지 않았다.
+- **Realtime 신호 채널은 공개 채널이다** — publishable 키만 있으면 누구나 `trip:<slug>` 를 구독·전송할 수 있다. 신호에 데이터가 없고 가짜 신호는 `router.refresh()` 만 일으켜 무해하다고 보고 둔다.
+  권한을 더 조이게 되면 private channel 을 검토한다.
 - 저장한 화면도 자기 신호를 받아 한 번 더 새로 받는다 — 알고 둔 단순화. 줄이려면 탭 id 를 액션에 실어 신호 payload 로 거른다.
 - `domain/game.ts` 의 사다리는 원형 아티팩트의 버그(빈 칸 보충 실패 → 일부끼리 절대 안 섞임)를 고친 버전이다. 테스트 5,000회가 이를 고정한다.

@@ -4,33 +4,24 @@ import { Badge, Button, ColorSwatch, Group, Paper, Popover, SimpleGrid, Stack, T
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { DateRangePicker } from "@/components/form/date-picker";
-import { LinkButton } from "@/components/link-button";
 import classes from "@/components/list.module.css";
-import { toast } from "@/components/notify";
 import { usageCount } from "@/lib/domain/expense-view";
 import type { Member, TripData } from "@/lib/domain/types";
 import { saveSettings } from "@/lib/trips/actions";
 import { MAX_MEMBERS, firstError, memberNameSchema, settingsSchema } from "@/lib/trips/schema";
 import {
   Avatar,
-  CopyFallback,
   DeleteConfirm,
   MEMBER_COLORS,
   SectionTitle,
   TrashButton,
-  copyText,
   filledColor,
   INK_ON_FILLED,
   useAction,
 } from "./parts";
 
 export function SettingsTab({ data }: { data: TripData }) {
-  return (
-    <>
-      <SettingsForm data={data} />
-      <Share data={data} />
-    </>
-  );
+  return <SettingsForm data={data} />;
 }
 
 type TripFields = { name: string; start: string; end: string; address: string };
@@ -338,53 +329,5 @@ function ColorPick({ member, onPick }: { member: Member; onPick: (color: number)
         </SimpleGrid>
       </Popover.Dropdown>
     </Popover>
-  );
-}
-
-function Share({ data }: { data: TripData }) {
-  const [fallback, setFallback] = useState("");
-  const url = () => `${location.origin}/t/${data.slug}`;
-  return (
-    <Stack component="section" gap="sm">
-      <SectionTitle>친구들과 공유</SectionTitle>
-      <Text size="sm" c="dimmed" mt={-4}>
-        입력하면 바로 저장돼요. 이 여행 링크를 친구들에게 보내면 로그인 없이 같이 보고 입력할 수 있어요.{" "}
-        <strong>링크를 아는 사람은 누구나 고칠 수 있으니</strong> 함께 가는 사람에게만 보내 주세요.
-      </Text>
-      <Group gap="xs">
-        <Button
-          variant="default"
-          onClick={async () => {
-            if (await copyText(url())) {
-              setFallback("");
-              toast("링크를 복사했어요");
-            } else setFallback(url());
-          }}
-        >
-          링크 복사
-        </Button>
-        <Button
-          variant="default"
-          onClick={async () => {
-            if (!navigator.share) {
-              if (await copyText(url())) toast("링크를 복사했어요");
-              else setFallback(url());
-              return;
-            }
-            try {
-              await navigator.share({ title: data.trip.name, url: url() });
-            } catch {
-              /* 사용자가 공유 창을 닫음 */
-            }
-          }}
-        >
-          공유하기
-        </Button>
-        <LinkButton href="/trips" variant="default" ml="auto">
-          다른 여행
-        </LinkButton>
-      </Group>
-      {fallback && <CopyFallback id="share-copy" text={fallback} label="여행 링크" />}
-    </Stack>
   );
 }
