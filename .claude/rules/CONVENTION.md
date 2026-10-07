@@ -30,6 +30,13 @@ summary: nbbang-lab 협업·코드 컨벤션
 - 정산 계산은 화면 코드와 분리된 **순수 함수**로 두고 테스트로 고정한다 — 금액이 1원만 틀려도 친구 사이 신뢰 문제가 된다.
 - **모바일(폰 폭) 기준으로 설계한다.** 입력창 글자 16px(iOS 확대 방지), 한글 `word-break: keep-all`, 숫자 `tabular-nums`.
 
+## 화면 · 데이터
+
+- **날짜·선택 입력은 shadcn 기반 부품(`src/components/form/`)을 쓴다.** 브라우저 기본 `<input type="date">`·`<select>` 는 쓰지 않는다 (사용자 지시 2026-10-06).
+- **폼은 다른 화면의 변경(실시간 갱신)으로 props 가 바뀌어도 남의 변경을 덮어쓰거나 지워진 대상을 되살리지 않게 만든다.** 패턴은 [`src/components/CLAUDE.md`](../../src/components/CLAUDE.md).
+- **개수 제한·다음 순서 번호처럼 "읽고 → 계산 → 넣기"가 필요한 변경은 DB 함수로 원자적으로 한다.** 패턴은 [`supabase/CLAUDE.md`](../../supabase/CLAUDE.md).
+- 새 DB 객체(테이블·함수·뷰)는 같은 마이그레이션에서 `anon`·`authenticated` 권한을 회수하고 스키마 테스트에 권한 케이스를 추가한다.
+
 ## 문서
 
 - **코드가 바뀌면 관련 디렉터리 `CLAUDE.md`를 같은 브랜치에서 갱신한다.**
