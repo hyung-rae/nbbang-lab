@@ -33,6 +33,9 @@ Supabase CLI 를 아직 쓰지 않는다. 대시보드 **SQL Editor** 에 새 �
 - **trips ↔ members 사이 FK 가 둘**(`members.trip_id`, 덤탱이 `trips_taker_fk`)이라 PostgREST 임베드는 `members!members_trip_id_fkey(*)` 처럼 이름을 지정해야 한다.
 - 같은 여행 멤버만 참조하도록 `(member_id, trip_id)` 복합 FK 를 쓴다 — 그래서 `members`·`expenses` 에 `unique (id, trip_id)` 가 있다.
 - `touch_trip()` 이 하위 테이블 변경 시 `trips.updated_at`("마지막 저장")을 갱신한다. **예보·좌표 캐시(`forecast`·`lat`·`lng`)만 바뀐 것은 갱신하지 않는다.**
+- `trips.lat`·`lng` 는 숙소 좌표 — `save_trip_settings` 가 아니라 앱(`actions.ts` `fillCoords`)이 저장 뒤 따로 쓴다(지오코딩은 DB 밖 외부 호출).
+  `trips.forecast` 는 **쓰지 않는다**(2026-10-07: 여행일 예보 대신 지금 날씨를 매번 받기로 함). 매핑(`toForecast`)만 남아 있고, 정리는 다음 스키마 변경 때 한다.
+  `music_cache` 는 음악 탭 작업 때 처음 쓴다.
 - 멤버 색 `members.color` 는 **0~11**(20261008 에서 0~5 → 0~11). 화면 `parts.tsx` `MEMBER_COLORS` 순서와 1:1 — 앞 6개 순서를 바꾸면 기존 멤버 색이 바뀐다.
 - jsonb 인자는 SQL `NULL` 과 jsonb `null` 이 다르다 — "없으면 건너뜀"은 `jsonb_typeof(x) = 'object'` 로 검사한다(`save_trip_settings`, 테스트로 재현).
 - 앱이 구분해야 하는 DB 오류는 전용 SQLSTATE 를 쓴다: `NB001`(인원 초과)·`NB002`(장보기 개수 초과)·`P0002`(대상 없음). 문구 변환은 `actions.ts` 의 `dbMessages`.
