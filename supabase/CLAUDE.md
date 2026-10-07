@@ -43,5 +43,9 @@ Supabase CLI 를 아직 쓰지 않는다. 대시보드 **SQL Editor** 에 새 �
 - 뷰는 `security_invoker = true` 로 만든다 — 기본값(만든 사람 권한)이면 RLS 를 건너뛴다.
 - 스키마를 바꾸면 `database.types.ts` 도 같이 고친다. CLI 로 연결되면
   `npx supabase gen types typescript --project-id <id> > src/lib/supabase/database.types.ts` 로 교체하고 `queries.ts` 의 `as unknown as` 캐스트를 걷어낸다.
+- **남은 결함 — 다음 스키마 변경 때 같이 고친다** (모두 service_role 전용 함수라 당장 위험은 낮다):
+  `save_trip_settings` 는 `p_trip` 이 오면 여행 정보 네 칸을 통째로 덮어쓴다(한 칸만 고쳐도 — 짧은 틈에 다른 화면의 변경을 잃을 수 있음).
+  `p_colors`·`p_add` 에 jsonb `null` 이 오면 알기 어려운 오류(`coalesce` 는 SQL NULL 만 처리 — 앱은 배열만 보낸다).
+  `p_max` 가 NULL 이면 인원·개수 검사가 꺼진다(`save_trip_settings`·`add_member`·`add_shopping_item` — 앱은 상수만 넘긴다).
 - PGlite 에는 Supabase 역할이 없어서 테스트가 `anon`·`authenticated`·`service_role` 을 직접 만든다.
   파라미터 하나를 두 타입 칼럼에 같이 쓰면(`$3` 를 smallint·integer 에) `inconsistent types deduced` 오류가 난다.

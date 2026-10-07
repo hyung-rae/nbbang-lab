@@ -68,11 +68,11 @@ grep -n -B2 -A6 "taker" .claude/glossary.md           # 코드 식별자로 역�
 - **코드 식별자**: `ShoppingItem` — `name`·`group`·`done`, DB `shopping_items` — `name`·**`grp`**·`done`
 - **정의**: 여행 전에 살 것 체크리스트. 분류별로 묶고 담은 것은 아래로 내린다.
 - **혼동 주의**: 코드는 `group`, DB 칼럼은 `grp`(예약어 회피) — `mapping.ts` 에서 바꾼다.
-  아티팩트 데이터에 `qty` 가 남아 있는 항목이 있지만 명세상 수량은 입력·표시하지 않는다(이관 때 버린다).
+  아티팩트 데이터에 `qty` 가 남아 있는 항목이 있지만 명세상 수량은 입력·표시하지 않는다(웹앱에는 수량 칸이 없다).
 
 ### 여행 티켓
 - **코드 식별자**: `Ticket` (`src/components/trip/ticket.tsx`)
-- **정의**: 여행 화면 맨 위 요약 카드. 여행 이름·날짜·D-day·숙소 주소·지도/날씨 링크·총 지출·1인 평균·지출 건수.
+- **정의**: 여행 화면 맨 위 요약 카드. 여행 이름·날짜·D-day·숙소 패널(주소 + 복사·네이버 지도·카카오맵 아이콘, 숙소 지역 지금 날씨)·총 지출·1인 평균·지출 건수.
 
 ### 일차 / D-day (tripBadge)
 - **코드 식별자**: `tripBadge()`·`dayLabel()` (`src/lib/domain/dates.ts`)
@@ -81,23 +81,30 @@ grep -n -B2 -A6 "taker" .claude/glossary.md           # 코드 식별자로 역�
 
 ### 여행 링크 (slug)
 - **코드 식별자**: `trips.slug`, `newSlug()`·`isValidSlug()` (`src/lib/trips/slug.ts`), 경로 `/t/[slug]`
-- **정의**: 여행마다 생기는 추측 불가한 12자 영숫자. 인증이 없는 동안 **이 링크를 아는 것이 곧 보기·입력 권한**이다.
+- **정의**: 여행마다 생기는 추측 불가한 12자 영숫자. 참여자에게는 **이 링크를 아는 것이 곧 보기·입력 권한**이다(설정·삭제 제외).
 - **혼동 주의**: 여행 id(uuid)와 다르다. 화면·Server Action 은 slug 로 받고 서버가 id 로 바꾼다(`tripIdOf`).
 
 ### 여행 목록 (trips)
 - **코드 식별자**: 경로 `/trips`, `listTrips()`, DB 뷰 `trip_summaries`
-- **정의**: 여행을 골라 들어가고 지우는 화면. 지금은 **DB 전체 여행**을 보여 준다(인증 전 임시, 2026-10-06 사용자 결정).
+- **정의**: 여행을 골라 들어가는 화면. **누구나 DB 전체 여행**을 본다(2026-10-07 사용자 결정). 새 여행·삭제는 관리자만.
+
+### 관리자 / 참여자
+- **코드 식별자**: `isAdmin()` (`src/lib/auth/admin.ts`), 쿠키 `nb_admin`, 경로 `/admin`, 화면 prop `admin`
+- **정의**: **관리자** = 비밀번호로 로그인한 사람 한 명(설정 탭·새 여행·여행 삭제). **참여자** = 여행 링크·목록으로 들어온 누구나, 로그인 없음(그 밖의 전부).
+- **혼동 주의**: 정산의 "멤버"(이름)와 다르다 — 참여자는 계정·멤버와 연결되지 않는다. 화면 숨김이 아니라 서버(`requireAdmin`)가 막는다.
 
 ## C. 부가 기능
 
 ### 몰빵 게임
-- **코드 식별자**: `GameTab` (`src/components/game/`), `MISSIONS`·`newLadder()`·`wheelTargetAngle()` (`src/lib/domain/game.ts`) — 룰렛 `wheel`·사다리 `ladder`·폭탄 `bomb`·카드 `cards`
-- **정의**: N빵 대신 참여자 중 한 명만 당첨시키는 게임. 미션(이번 계산·설거지·고기 굽기·심부름)을 건다.
+- **코드 식별자**: `GameTab` (`src/components/game/`), `newLadder()`·`wheelTargetAngle()` (`src/lib/domain/game.ts`) — 룰렛 `wheel`·사다리 `ladder`·폭탄 `bomb`·카드 `cards`
+- **정의**: N빵 대신 참여자 중 한 명만 당첨시키는 게임.
 - **혼동 주의**: 결과를 **저장하지 않는다**. 당첨자 몫으로 지출을 기록하면 그때 일반 지출(`split=[당첨자]`)이 된다.
+  명세의 "미션 고르기(이번 계산·설거지…)"는 웹앱에서 뺐다(2026-10-07) — 코드에 미션이 없다.
 
-### 여행 플레이리스트 (명세)
-- **코드 식별자**: (미구현) 계획은 YouTube Data API v3 검색 + DB `music_cache`. 아티팩트판은 `SONGS` 배열 `[제목, 가수, 연도, 장르, 분위기]`
-- **정의**: 연도·분위기·장르 칩으로 걸러 국내 노래 5곡을 뽑는 기능. 줄 안은 OR, 줄끼리는 AND.
+### 여행 플레이리스트 (음악 탭)
+- **코드 식별자**: `MusicTab` (`src/components/music/`), `getSongs`·`ERAS`·`THEMES`·`cellKey` (`src/lib/music/`), DB `music_cache`
+- **정의**: 시대(선택)·테마(필수, 상황 또는 장르 하나) 칩을 고르면 YouTube 재생목록에서 국내 노래 7곡을 뽑아 보여 주는 기능(재생은 안 함).
+- **혼동 주의**: 아티팩트판은 내장 135곡 `SONGS` + 연도·분위기·장르 3줄(줄 안 OR·줄끼리 AND)이었다 — 웹앱은 칩 2줄·줄마다 하나.
 
 ## D. 플랫폼 (아티팩트판 ↔ 웹앱판)
 
@@ -105,7 +112,7 @@ grep -n -B2 -A6 "taker" .claude/glossary.md           # 코드 식별자로 역�
 - **코드 식별자**: 웹앱 `trips.updated_at` / `TripData.updatedAt`("마지막 저장"), 아티팩트 `rev`·`updatedAt`
 - **정의**: 웹앱판은 입력할 때마다 **즉시 저장**(Server Action)하고, 아티팩트판은 모아 둔 변경을 "저장하고 공유"로 HTML 전체 재발행했다.
 - **혼동 주의**: 웹앱에는 `rev`·저장 바·localStorage 초안이 없다. "저장"이 어느 쪽 이야기인지 먼저 분간한다.
-  아티팩트의 실데이터는 **라이브 아티팩트 안**에 있다 — 이관할 때는 라이브 버전을 읽어 `trip-data` JSON을 가져온다.
+  아티팩트의 실데이터는 **라이브 아티팩트 안**에만 있다 — 웹앱으로 옮기지 않는다(2026-10-07 결정).
 
 ### 변경 신호 (실시간 갱신)
 - **코드 식별자**: 채널 `trip:<slug>` / 이벤트 `TRIP_CHANGED`("changed") (`src/lib/realtime/`), 구독 `useLiveUpdates()`

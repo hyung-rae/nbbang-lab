@@ -3,6 +3,7 @@
  * 화면별 스타일은 Mantine style props, 직접 그리는 부분은 같은 폴더의 *.module.css.
  * 다크 모드는 Mantine 이 html[data-mantine-color-scheme] 로 정한다 (layout: defaultColorScheme="auto").
  */
+/* 패키지 전체 import — 컴포넌트별로 고르면 하나만 빠져도 화면이 깨진다 */
 @import "@mantine/core/styles.css";
 @import "@mantine/dates/styles.css";
 @import "@mantine/notifications/styles.css";

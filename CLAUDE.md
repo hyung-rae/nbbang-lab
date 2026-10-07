@@ -8,9 +8,11 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 ## 1. 현재 상태
 
 - **MVP 프로덕션 배포 중 (Vercel, 2026-10-07).** 여행 만들기·목록, 정산·지출·장보기·몰빵 게임·설정, 다른 화면 자동 갱신, 숙소 지금 날씨(NCP 지오코딩 + Open-Meteo), 음악 탭(YouTube 재생목록에서 곡 정보만).
-- **인증 없음 (의도된 결정, 2026-10-06).** 여행 링크(slug)를 아는 누구나 보고 입력한다. `/trips` 는 DB 전체 여행을 보여 준다(임시).
-  로그인 작업 때 권한 검사(`src/lib/trips/actions.ts` `tripIdOf`)·여행 목록 범위·Realtime 채널을 함께 바꾼다.
-- 남은 일: 네이버 로그인(인증). 아티팩트 실데이터 이관은 **하지 않는다**(2026-10-07 사용자 결정).
+- **권한 (2026-10-07 결정): 로그인은 관리자 한 명(비밀번호), 참여자는 로그인 없이 링크로.**
+  관리자만 설정 탭·새 여행·여행 삭제. 참여자(링크·여행 목록으로 들어온 누구나)는 그 밖의 전부(지출·장보기·덤탱이·게임·음악).
+  `/trips` 는 누구나 모든 여행을 보고 들어간다 — 사이트 주소를 알면 누구나 모든 여행을 고칠 수 있다(감수한 위험).
+  가드는 서버가 정본(`src/lib/auth/`, `trips/actions.ts` `requireAdmin`) — 자세한 것은 [src/lib](src/lib/CLAUDE.md).
+- 남은 일: 없음(기능 기준). 아티팩트 실데이터 이관·네이버 로그인·참여자 로그인은 **하지 않는다**(2026-10-07 사용자 결정).
 
 ## 2. 기술 스택
 
@@ -51,7 +53,14 @@ supabase/           마이그레이션 SQL · 스키마 테스트
 ## 5. 환경변수
 
 `.env.example` 이 정본(설명 포함). `.env.local` 에 채우고, Vercel 에는 같은 이름으로 등록한다.
-`SUPABASE_SECRET_KEY`·`NAVER_MAPS_API_KEY_ID`·`NAVER_MAPS_API_KEY`·`YOUTUBE_API_KEY` 는 **서버 전용** — `NEXT_PUBLIC_` 을 붙이지 않는다.
+`SUPABASE_SECRET_KEY`·`NAVER_MAPS_API_KEY_ID`·`NAVER_MAPS_API_KEY`·`YOUTUBE_API_KEY`·`ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET` 는 **서버 전용** — `NEXT_PUBLIC_` 을 붙이지 않는다.
+
+**Vercel 등록** (2026-10-07 배포 때 겪은 것)
+- 서버 전용 키는 **Secret**, `NEXT_PUBLIC_*` 는 **Config** — 공개 접두사가 붙은 이름은 Secret 으로 저장하면 Vercel 이 거절한다.
+- 적용 환경은 **Production + Preview 둘 다.** Production 만 넣으면 PR 미리보기에서 DB 를 쓰는 화면이 500.
+- 값을 바꾸면 **Redeploy** 해야 반영된다. `NEXT_PUBLIC_*` 는 빌드 때 코드에 박히고, 빠지면 오류 없이 **자동 갱신만 꺼진다**(`supabase/browser.ts` 가 null).
+- New Project 화면의 Supabase 통합 **[Add] 는 누르지 않는다** — 새 DB 를 만들거나 다른 이름의 키를 넣는다.
+- 서울 리전은 응답 헤더 `x-vercel-id` 의 `icn1` 로 확인한다. 대시보드에서 Function Region·Node 버전을 손으로 바꾸면 `vercel.json`·`engines` 보다 우선한다.
 
 ## 6. 명세 원본
 
@@ -65,20 +74,23 @@ supabase/           마이그레이션 SQL · 스키마 테스트
 ## 7. 함정 / 주의사항
 
 - **명세의 제약 상당수는 아티팩트 플랫폼 제약 때문이었다** — 웹앱에서는 아래처럼 바꿨다(2026-10-06 사용자 결정).
-  - "입력은 소유자만" → 링크를 아는 누구나 입력 (인증은 추후)
+  - "입력은 소유자만" → 링크를 아는 누구나 입력, 설정·새 여행·삭제만 관리자(비밀번호 로그인, 2026-10-07)
   - "모아서 저장하고 공유"(저장 바·초안·rev) → 입력할 때마다 즉시 저장 + 다른 화면 자동 갱신
   - "예보를 Claude가 넣어 줌·노래 목록 내장" → 숙소 **지금 날씨**(NCP Maps Geocoding + Open-Meteo, 여행일 예보는 안 함 — 2026-10-07), 노래는 YouTube Data API v3 재생목록 검색(내장 135곡 대신, 칩 2줄 — 2026-10-07)
   - **네이버는 날씨 오픈 API 가 없다.** 네이버는 주소 → 좌표(지오코딩)에만 쓰고, 날씨 데이터는 Open-Meteo 에서 받는다.
   - 반대로 **정산 규칙(1원 단위 N빵 → 100원 정리 → 최소 송금)은 제품 결정**이라 그대로 지킨다.
-- **아티팩트의 실데이터는 라이브 아티팩트 안에만 있다.** 이관할 때는 아티팩트를 읽어 `trip-data` JSON을 가져온다 — 로컬 파일로 아티팩트를 재발행하면 데이터가 덮어써진다.
-- 문서와 아티팩트 사이에 차이가 있다(제목, 예보 표시, 음악 분위기·장르 개수). 구현 기준이 헷갈리면 사용자에게 확인한다.
+- **아티팩트의 실데이터는 라이브 아티팩트 안에만 있다**(웹앱으로 옮기지 않는다 — 2026-10-07 결정). 로컬 파일로 아티팩트를 재발행하면 데이터가 덮어써진다.
+- **로컬 개발·PR 미리보기·프로덕션이 같은 Supabase DB 를 쓴다.** 로컬에서 만든 점검용 여행이 프로덕션 `/trips` 에 그대로 보인다 → 점검 뒤 지운다.
+  음악 캐시(`music_cache`)도 같이 쓴다.
+- 배포본 브라우저 번들을 검사할 때(공개 키가 들어갔나, 비밀 키가 샜나): Turbopack 은 HTML `<script>` 의 청크가 다른 청크를 다시 불러온다 —
+  HTML 에 적힌 청크만 보면 "없다"고 오판한다(실제로 한 번 오판). 청크 안 참조까지 따라간다. 번들의 `sb_secret_` 문자열은 supabase-js 의 키 종류 검사라 유출이 아니다.
 - **`AGENTS.md` 를 지우지 않는다.** `next dev` 가 Next.js 규칙 블록을 다시 써 넣는데, `AGENTS.md` 가 없으면 이 파일(보호 파일)에 써 넣는다
   (`node_modules/next/dist/server/lib/generate-agent-files.js`).
 - `create-next-app` 은 `.claude/`·`CLAUDE.md` 가 있는 폴더에 바로 만들지 못한다 — 다시 만들 일이 있으면 scratchpad 에 만든 뒤 복사한다.
 - `rm -rf` 는 `.claude/settings.json` 에서 막혀 있다. 파일 단위 `rm` 을 쓴다.
 - 새 마이그레이션은 Supabase 대시보드 SQL Editor 로 **사용자가 적용**한다 (CLI 미사용). 적용 전에는 그 기능이 실패한다.
 - **공개 저장소다.** 원형 아티팩트 링크·실제 숙소 주소·친구 실데이터를 파일·커밋 메시지·PR 에 쓰지 않는다(2026-10-07 기록에서 제거함). 테스트 데이터는 예시 값으로.
-- Node 는 `package.json` `engines` 24.x — CI(`node-version-file`)·Vercel 이 이 값을 따른다.
+- Node 는 `package.json` `engines` 24.x — CI(`node-version-file`)·Vercel 이 이 값을 따른다. `@types/node` 도 ^24 (create-next-app 기본 ^20 은 Vitest 5 peer 와 충돌).
 
 ## 8. 협업 문서 체계
 
