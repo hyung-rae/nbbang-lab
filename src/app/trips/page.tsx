@@ -7,6 +7,7 @@ import { LinkActionIcon } from "@/components/link-button";
 import { PageShell } from "@/components/page-shell";
 import { SectionTitle } from "@/components/trip/parts";
 import { TripList } from "@/components/trips/trip-list";
+import { isAdmin } from "@/lib/auth/admin";
 import { listTrips } from "@/lib/trips/queries";
 
 export const metadata: Metadata = { title: "여행 목록", robots: { index: false } };
@@ -14,21 +15,25 @@ export const metadata: Metadata = { title: "여행 목록", robots: { index: fal
 export default async function TripsPage() {
   // 요청마다 DB 에서 새로 읽는다 (빌드 때 미리 만들지 않음)
   await connection();
-  const trips = await listTrips();
+  const [trips, admin] = await Promise.all([listTrips(), isAdmin()]);
   return (
     <PageShell>
-      <AppHeader current="trips" />
+      <AppHeader current="trips" admin={admin} />
       <Stack gap="sm">
         <Group justify="space-between" gap="xs">
           <SectionTitle count={`${trips.length}개`}>여행 목록</SectionTitle>
-          <LinkActionIcon href="/" aria-label="새 여행" variant="filled">
-            <Plus aria-hidden size={18} />
-          </LinkActionIcon>
+          {admin && (
+            <LinkActionIcon href="/" aria-label="새 여행" variant="filled">
+              <Plus aria-hidden size={18} />
+            </LinkActionIcon>
+          )}
         </Group>
-        <TripList trips={trips} />
-        <Text size="xs" c="dimmed">
-          지금은 로그인이 없어서 만든 여행이 모두 보여요. 지우면 멤버·지출·장보기까지 함께 사라지고 되돌릴 수 없어요.
-        </Text>
+        <TripList trips={trips} admin={admin} />
+        {admin && (
+          <Text size="xs" c="dimmed">
+            지우면 멤버·지출·장보기까지 함께 사라지고 되돌릴 수 없어요.
+          </Text>
+        )}
       </Stack>
     </PageShell>
   );

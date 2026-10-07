@@ -1,0 +1,15 @@
+/* 홈 소개 카드 아래 GitHub 링크 — 카드 글자색(흰색)을 따르고 살짝 흐리게 */
+.repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  opacity: 0.85;
+  text-decoration: none;
+
+  &:hover {
+    opacity: 1;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}

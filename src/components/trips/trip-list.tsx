@@ -3,6 +3,7 @@
 import { Box, Group, Paper, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import { useState } from "react";
+import { CopyLinkButton } from "@/components/copy-link-button";
 import classes from "@/components/list.module.css";
 import { DeleteConfirm, Empty, TrashButton, useAction } from "@/components/trip/parts";
 import { formatDate } from "@/lib/domain/dates";
@@ -15,8 +16,8 @@ function dateText(t: TripSummary) {
   return t.end && t.end !== t.start ? `${formatDate(t.start)} – ${formatDate(t.end)}` : formatDate(t.start);
 }
 
-/** 여행을 눌러 들어가고, 휴지통 → 확인 창에서 삭제 */
-export function TripList({ trips }: { trips: TripSummary[] }) {
+/** 여행을 눌러 들어가고, 링크 복사(누구나), (관리자만) 휴지통 → 확인 창에서 삭제 */
+export function TripList({ trips, admin }: { trips: TripSummary[]; admin: boolean }) {
   const { pending, run } = useAction();
   const [target, setTarget] = useState<TripSummary | null>(null);
   const [opened, setOpened] = useState(false);
@@ -26,9 +27,11 @@ export function TripList({ trips }: { trips: TripSummary[] }) {
     <>
       {!trips.length ? (
         <Empty title="아직 만든 여행이 없어요">
-          <Text size="sm">
-            위의 <strong>+</strong> 버튼으로 첫 여행을 만들어 보세요.
-          </Text>
+          {admin && (
+            <Text size="sm">
+              위의 <strong>+</strong> 버튼으로 첫 여행을 만들어 보세요.
+            </Text>
+          )}
         </Empty>
       ) : (
         <Paper component="ul" withBorder radius="lg" className={classes.list}>
@@ -47,14 +50,17 @@ export function TripList({ trips }: { trips: TripSummary[] }) {
                   </Text>
                 </Box>
               </UnstyledButton>
-              <TrashButton
-                label={`${t.name} 삭제`}
-                disabled={pending}
-                onClick={() => {
-                  setTarget(t);
-                  setOpened(true);
-                }}
-              />
+              <CopyLinkButton path={`/t/${t.slug}`} label={`${t.name} 링크 복사`} variant="subtle" color="gray" />
+              {admin && (
+                <TrashButton
+                  label={`${t.name} 삭제`}
+                  disabled={pending}
+                  onClick={() => {
+                    setTarget(t);
+                    setOpened(true);
+                  }}
+                />
+              )}
             </Group>
           ))}
         </Paper>

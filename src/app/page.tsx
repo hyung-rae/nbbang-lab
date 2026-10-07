@@ -1,14 +1,21 @@
 import { Badge, Paper, Stack, Text, Title } from "@mantine/core";
+import Image from "next/image";
 import { AppHeader } from "@/components/app-header";
+import { GitHubMark } from "@/components/github-mark";
 import { NewTripForm } from "@/components/home/new-trip-form";
+import classes from "@/components/home/home.module.css";
+import { LinkButton } from "@/components/link-button";
 import { PageShell } from "@/components/page-shell";
 import { SectionTitle } from "@/components/trip/parts";
-import { SITE_NAME } from "@/lib/site";
+import { isAdmin } from "@/lib/auth/admin";
+import { REPO_URL, SITE_NAME } from "@/lib/site";
 
-export default function Home() {
+export default async function Home() {
+  // 새 여행은 관리자만 만든다(2026-10-07 결정). 참여자는 받은 여행 링크나 여행 목록으로 들어간다
+  const admin = await isAdmin();
   return (
     <PageShell>
-      <AppHeader />
+      <AppHeader admin={admin} />
       <Paper radius="lg" p="lg" bg="var(--mantine-primary-color-filled)" c="white">
         <Badge color="yellow" c="dark" size="lg">
           여행가서 친구들끼리
@@ -21,12 +28,30 @@ export default function Home() {
           <br />
           1원 단위로 나누고, 송금은 100원 단위로 깔끔하게.
         </Text>
+        <Text size="xs" mt="sm" opacity={0.8}>
+          여행 링크 하나로 친구들이 로그인 없이 함께 적고, 입력하면 모두의 화면이 바로 바뀌어요.
+          <br />
+          장보기 목록 · 몰빵 게임 · 숙소 날씨 · 여행 플레이리스트도 함께.
+        </Text>
+        <Text component="a" href={REPO_URL} target="_blank" rel="noopener" size="xs" mt="sm" className={classes.repo}>
+          <GitHubMark size={14} />
+          GitHub 에서 소스 보기
+        </Text>
       </Paper>
 
-      <Stack gap="sm">
-        <SectionTitle>새 여행</SectionTitle>
-        <NewTripForm />
-      </Stack>
+      {admin ? (
+        <Stack gap="sm">
+          <SectionTitle>새 여행</SectionTitle>
+          <NewTripForm />
+        </Stack>
+      ) : (
+        <Stack align="center" gap="md" py="md">
+          <Image src="/icon-512.png" alt={`${SITE_NAME} 로고`} width={160} height={160} priority />
+          <LinkButton href="/trips" size="md">
+            여행 목록 보기
+          </LinkButton>
+        </Stack>
+      )}
     </PageShell>
   );
 }
