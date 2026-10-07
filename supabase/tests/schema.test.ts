@@ -180,11 +180,11 @@ describe("20261007 원자적 추가 · 여행 요약", () => {
     await expect(addMember("00000000-0000-4000-8000-000000000000", "x")).rejects.toMatchObject({ code: "P0002" });
   });
 
-  it("add_member — 6색을 다 쓰면 인원 순서대로 돌려 쓴다", async () => {
+  it("add_member — 12색을 다 쓰면 인원 순서대로 돌려 쓴다 (20261008 에서 6색 → 12색)", async () => {
     const { tripId } = await seed(db);
-    for (const n of ["d", "e", "f", "g"]) await addMember(tripId, n);
+    for (const n of ["d", "e", "f", "g", "h", "i", "j", "k", "l", "m"]) await addMember(tripId, n, 20);
     const rows = (await db.query<{ color: number }>(`select color from members where trip_id = $1 order by sort_order`, [tripId])).rows;
-    expect(rows.map((r) => r.color)).toEqual([0, 1, 2, 3, 4, 5, 0]);
+    expect(rows.map((r) => r.color)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]);
   });
 
   it("sort_order 는 여행 안에서 겹칠 수 없다", async () => {
@@ -226,6 +226,115 @@ describe("20261007 원자적 추가 · 여행 요약", () => {
       await expect(db.query(`select * from trip_summaries`)).rejects.toThrow(/permission denied/);
       await expect(addMember(tripId, "몰래")).rejects.toThrow(/permission denied/);
       await expect(db.query(`select add_shopping_item($1, 'x', '기타', 80)`, [tripId])).rejects.toThrow(/permission denied/);
+      await db.exec(`reset role`);
+    }
+  });
+});
+
+describe("20261008 설정 한 번에 저장 · 12색", () => {
+  let db: Db;
+  beforeEach(async () => {
+    db = await freshDb();
+  });
+
+  const save = (
+    tripId: string,
+    o: { trip?: object | null; remove?: string[]; colors?: object[]; add?: object[]; max?: number } = {},
+  ) =>
+    db.query(`select save_trip_settings($1, $2::jsonb, $3::uuid[], $4::jsonb, $5::jsonb, $6)`, [
+      tripId,
+      o.trip === undefined ? null : JSON.stringify(o.trip),
+      o.remove ?? [],
+      JSON.stringify(o.colors ?? []),
+      JSON.stringify(o.add ?? []),
+      o.max ?? 12,
+    ]);
+  const members = async (tripId: string) =>
+    (
+      await db.query<{ name: string; color: number; sort_order: number }>(
+        `select name, color, sort_order from members where trip_id = $1 order by sort_order`,
+        [tripId],
+      )
+    ).rows;
+
+  it("색 번호는 0~11", async () => {
+    const { tripId } = await seed(db);
+    await db.query(`insert into members (trip_id, name, color, sort_order) values ($1, '열하나', 11, 10)`, [tripId]);
+    await expect(
+      db.query(`insert into members (trip_id, name, color, sort_order) values ($1, '열둘', 12, 11)`, [tripId]),
+    ).rejects.toThrow(/members_color_check/);
+  });
+
+  it("여행 정보·빼기·색·추가를 한 번에, 새 멤버 순서는 이어서", async () => {
+    const { tripId, members: [, 욱진, 연제] } = await seed(db);
+    await save(tripId, {
+      trip: { name: "양평", start: "2026-11-01", end: "2026-11-02", address: "경기 양평군" },
+      remove: [욱진],
+      colors: [{ id: 연제, color: 9 }],
+      add: [
+        { name: "형래", color: 11 },
+        { name: "민지", color: 7 },
+      ],
+    });
+    const t = await one<{ name: string; start_date: unknown; address: string }>(
+      db,
+      `select name, start_date::text as start_date, address from trips where id = $1`,
+      [tripId],
+    );
+    expect(t).toEqual({ name: "양평", start_date: "2026-11-01", address: "경기 양평군" });
+    expect(await members(tripId)).toEqual([
+      { name: "기준", color: 0, sort_order: 0 },
+      { name: "연제", color: 9, sort_order: 2 },
+      { name: "형래", color: 11, sort_order: 3 },
+      { name: "민지", color: 7, sort_order: 4 },
+    ]);
+  });
+
+  it("p_trip 이 null 이면 여행 정보는 그대로", async () => {
+    const { tripId } = await seed(db);
+    await save(tripId, { trip: null, add: [{ name: "형래", color: 3 }] });
+    expect((await one<{ name: string }>(db, `select name from trips where id = $1`, [tripId])).name).toBe("가평");
+  });
+
+  it("하나라도 실패하면 아무것도 반영되지 않는다 — 지출에 든 사람 빼기·같은 이름·인원 초과", async () => {
+    const { tripId, members: ids } = await seed(db);
+    await saveExpense(db, tripId, null, ids[0], [ids[0], ids[1]]);
+    const before = await members(tripId);
+    const change = { trip: { name: "바뀜", start: null, end: null, address: null }, colors: [{ id: ids[2], color: 8 }] };
+
+    await expect(save(tripId, { ...change, remove: [ids[1]] })).rejects.toMatchObject({ code: "23503" });
+    await expect(save(tripId, { ...change, add: [{ name: "기준", color: 4 }] })).rejects.toMatchObject({ code: "23505" });
+    await expect(save(tripId, { ...change, add: [{ name: "넷째", color: 4 }], max: 3 })).rejects.toMatchObject({
+      code: "NB001",
+    });
+
+    expect((await one<{ name: string }>(db, `select name from trips where id = $1`, [tripId])).name).toBe("가평");
+    expect(await members(tripId)).toEqual(before);
+  });
+
+  it("빼고 같은 이름으로 다시 넣을 수 있고, 다른 여행 멤버 id 는 무시한다", async () => {
+    const { tripId, members: ids } = await seed(db);
+    const other = await one<{ id: string }>(db, `insert into trips (slug, name) values ('othertrip000', '남의 여행') returning id`);
+    const stranger = await one<{ id: string }>(
+      db,
+      `insert into members (trip_id, name, color, sort_order) values ($1, '남', 0, 0) returning id`,
+      [other.id],
+    );
+    await save(tripId, {
+      remove: [ids[2], stranger.id],
+      colors: [{ id: stranger.id, color: 5 }],
+      add: [{ name: "연제", color: 10 }],
+    });
+    expect((await members(tripId)).map((m) => m.name)).toEqual(["기준", "욱진", "연제"]);
+    expect(await one(db, `select color from members where id = $1`, [stranger.id])).toEqual({ color: 0 });
+  });
+
+  it("없는 여행은 P0002, anon·authenticated 는 쓸 수 없다", async () => {
+    const { tripId } = await seed(db);
+    await expect(save("00000000-0000-4000-8000-000000000000")).rejects.toMatchObject({ code: "P0002" });
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`set role ${role}`);
+      await expect(save(tripId)).rejects.toThrow(/permission denied/);
       await db.exec(`reset role`);
     }
   });

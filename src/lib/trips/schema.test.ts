@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_MEMBERS, expenseSchema, firstError, newTripSchema, tripInfoSchema } from "./schema";
+import { COLOR_COUNT, MAX_MEMBERS, expenseSchema, firstError, newTripSchema, settingsSchema, tripInfoSchema } from "./schema";
 
 const uuid = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
 
@@ -42,5 +42,38 @@ describe("expenseSchema", () => {
     const r = expenseSchema.safeParse({ ...base, amount: 0, title: "", payerId: "", split: [] });
     expect(r.success).toBe(false);
     if (!r.success) expect(firstError(r.error)).toBe("금액을 입력해 주세요.");
+  });
+});
+
+describe("settingsSchema — 설정 한 번에 저장", () => {
+  const base = { trip: null, remove: [], colors: [], add: [] };
+
+  it("여행 정보는 안 바뀌었으면 null, 바뀌었으면 날짜 규칙까지 적용", () => {
+    expect(settingsSchema.parse(base)).toEqual(base);
+    expect(settingsSchema.parse({ ...base, trip: { name: " 양평 ", start: "2026-11-01", end: "", address: "" } }).trip).toEqual({
+      name: "양평",
+      start: "2026-11-01",
+      end: "2026-11-01",
+      address: null,
+    });
+  });
+
+  it(`색은 0~${COLOR_COUNT - 1}`, () => {
+    expect(settingsSchema.safeParse({ ...base, colors: [{ id: uuid(1), color: COLOR_COUNT - 1 }] }).success).toBe(true);
+    expect(settingsSchema.safeParse({ ...base, colors: [{ id: uuid(1), color: COLOR_COUNT }] }).success).toBe(false);
+    expect(settingsSchema.safeParse({ ...base, add: [{ name: "형래", color: -1 }] }).success).toBe(false);
+  });
+
+  it("새 멤버 이름 검증 — 빈 이름·중복·인원 상한", () => {
+    const empty = settingsSchema.safeParse({ ...base, add: [{ name: " ", color: 0 }] });
+    expect(empty.success).toBe(false);
+    if (!empty.success) expect(firstError(empty.error)).toBe("이름을 적어 주세요.");
+
+    const dup = settingsSchema.safeParse({ ...base, add: [{ name: "형래", color: 0 }, { name: " 형래", color: 1 }] });
+    expect(dup.success).toBe(false);
+    if (!dup.success) expect(firstError(dup.error)).toBe("같은 이름이 이미 있어요. 구별되게 적어 주세요.");
+
+    const many = Array.from({ length: MAX_MEMBERS + 1 }, (_, i) => ({ name: `m${i}`, color: 0 }));
+    expect(settingsSchema.safeParse({ ...base, add: many }).success).toBe(false);
   });
 });

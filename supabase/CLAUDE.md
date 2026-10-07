@@ -8,7 +8,7 @@
 | `tests/schema.test.ts` | 마이그레이션을 **PGlite(WASM Postgres 17)** 에 차례로 적용해 제약·트리거·함수·권한을 검증 (`npm test` 에 포함) |
 
 - 테이블: `trips` · `members` · `expenses` · `expense_splits` · `shopping_items` · `music_cache`
-- 함수: `save_expense`(지출 + 나눌 사람) · `add_member` · `add_shopping_item` · `touch_trip`(트리거)
+- 함수: `save_expense`(지출 + 나눌 사람) · `save_trip_settings`(설정 한 번에 저장: 여행 정보·멤버 빼기·색·추가) · `add_member`(지금 화면은 안 씀) · `add_shopping_item` · `touch_trip`(트리거)
 - 뷰: `trip_summaries`(여행 목록용 — 인원·지출 건수·합계를 여행당 한 행)
 - TS 타입: `src/lib/supabase/database.types.ts` (지금은 손으로 맞춤 — 아래 함정)
 
@@ -33,6 +33,8 @@ Supabase CLI 를 아직 쓰지 않는다. 대시보드 **SQL Editor** 에 새 �
 - **trips ↔ members 사이 FK 가 둘**(`members.trip_id`, 덤탱이 `trips_taker_fk`)이라 PostgREST 임베드는 `members!members_trip_id_fkey(*)` 처럼 이름을 지정해야 한다.
 - 같은 여행 멤버만 참조하도록 `(member_id, trip_id)` 복합 FK 를 쓴다 — 그래서 `members`·`expenses` 에 `unique (id, trip_id)` 가 있다.
 - `touch_trip()` 이 하위 테이블 변경 시 `trips.updated_at`("마지막 저장")을 갱신한다. **예보·좌표 캐시(`forecast`·`lat`·`lng`)만 바뀐 것은 갱신하지 않는다.**
+- 멤버 색 `members.color` 는 **0~11**(20261008 에서 0~5 → 0~11). 화면 `parts.tsx` `MEMBER_COLORS` 순서와 1:1 — 앞 6개 순서를 바꾸면 기존 멤버 색이 바뀐다.
+- jsonb 인자는 SQL `NULL` 과 jsonb `null` 이 다르다 — "없으면 건너뜀"은 `jsonb_typeof(x) = 'object'` 로 검사한다(`save_trip_settings`, 테스트로 재현).
 - 앱이 구분해야 하는 DB 오류는 전용 SQLSTATE 를 쓴다: `NB001`(인원 초과)·`NB002`(장보기 개수 초과)·`P0002`(대상 없음). 문구 변환은 `actions.ts` 의 `dbMessages`.
 - 뷰는 `security_invoker = true` 로 만든다 — 기본값(만든 사람 권한)이면 RLS 를 건너뛴다.
 - 스키마를 바꾸면 `database.types.ts` 도 같이 고친다. CLI 로 연결되면

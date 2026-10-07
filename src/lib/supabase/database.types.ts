@@ -109,6 +109,17 @@ export type Database = {
         Args: { p_trip_id: string; p_name: string; p_max: number };
         Returns: string;
       };
+      save_trip_settings: {
+        Args: {
+          p_trip_id: string;
+          p_trip: { name: string; start: string | null; end: string | null; address: string | null } | null;
+          p_remove: string[];
+          p_colors: { id: string; color: number }[];
+          p_add: { name: string; color: number }[];
+          p_max: number;
+        };
+        Returns: undefined;
+      };
       add_shopping_item: {
         Args: { p_trip_id: string; p_name: string; p_grp: string; p_max: number };
         Returns: string;
