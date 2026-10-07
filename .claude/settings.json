@@ -1,0 +1,57 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run dev)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(npm run test:*)",
+      "Bash(npm test)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git ls-remote:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(npm publish:*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[review-rules W-규칙 — 세션 전체 적용]'; grep -A8 '^### W-[0-9]' \"$CLAUDE_PROJECT_DIR/.claude/review-rules.md\" || true",
+            "timeout": 10,
+            "statusMessage": "W-규칙 로딩 중"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); p=\"$CLAUDE_PROJECT_DIR\"; case \"$f\" in \"$p/CLAUDE.md\"|\"$p/.claude/rules/\"*|\"$p/.claude/review-rules.md\"|\"$p/.claude/glossary.md\") echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"보호 파일입니다 — 루트 CLAUDE.md·.claude/rules/·review-rules.md·glossary.md 는 사용자 승인 후에만 수정 (CONVENTION.md)\"}}';; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

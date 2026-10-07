@@ -1,0 +1,30 @@
+# 작업 문서 (로컬 전용 — /workdoc)
+private-docs/*
+
+# Claude Code 개인 설정·OMC 런타임 상태
+.claude/settings.local.json
+.omc/
+.claude/.omc/
+
+# 의존성·빌드 산출물
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# 환경변수
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# Next.js · Vercel · TypeScript (create-next-app 기본값에서 병합)
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+npm-debug.log*
