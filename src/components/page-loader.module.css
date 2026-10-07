@@ -1,0 +1,49 @@
+/* 이동 직후 1초 덮어 두는 판 (app/template.tsx). 1초 뒤 흐려지며 사라지는 건 CSS 가 맡는다 —
+ * 새로고침 때 서버 HTML 에도 있으니, JS 가 늦거나 실패해도 그려진 순간부터 1초면 걷힌다.
+ * z-index 는 알림(overlay 400)보다 아래라 이동 직후 토스트가 가려지지 않는다 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mantine-z-index-popover);
+  background-color: var(--app-bg);
+  animation: leave 200ms ease-out 1000ms forwards;
+}
+
+.ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+}
+
+/* 아이콘 바깥 원: 옅은 테두리 위로 포인트 색 한 조각이 돈다 */
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--mantine-color-default-border);
+  border-top-color: var(--mantine-primary-color-filled);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+/* 검은 실루엣 아이콘이라 다크 모드에서는 반전 (app-header 와 같음) */
+.logo {
+  @mixin dark {
+    filter: invert(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

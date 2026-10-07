@@ -12,6 +12,7 @@
 | `form/` | `DatePicker`·`DateRangePicker`(Mantine `DatePickerInput`, `ko`·일요일 시작), `OptionSelect`(Mantine `Select`) |
 | `trips/`, `home/`, `app-header.tsx` | 여행 목록, 새 여행 폼, 공통 헤더 |
 | `page-shell.tsx`, `link-button.tsx`, `notify.ts`, `list.module.css` | 화면 틀(가운데 36rem), 버튼 모양 링크, 알림 `toast`/`toast.error`, 카드 안 목록 줄 스타일 |
+| `page-loader.tsx` | 화면 이동 로딩(가운데 아이콘 + 도는 원). `app/loading.tsx`(데이터 기다리는 동안) + `app/template.tsx`(첫 경로가 바뀌는 이동 직후 1초 덮기, 타이밍은 CSS — 서버 지연은 `refresh()` 까지 느려져서 안 씀. `/t/a`→`/t/b` 는 안 덮음). 루트 loading 이라 없는 여행 링크도 200(+noindex) |
 
 ## 스타일 체계 (Mantine 9, 2026-10-07 shadcn·Tailwind 에서 전면 교체)
 
