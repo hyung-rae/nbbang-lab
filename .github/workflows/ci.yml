@@ -1,0 +1,31 @@
+# PR 과 main push 마다 lint · 타입 검사 · 테스트(정산·스키마) · 빌드.
+# 배포는 Vercel GitHub 연동이 한다 (PR → 미리보기, main → 프로덕션). 여기서는 DB·비밀 키를 쓰지 않는다.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
