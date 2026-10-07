@@ -1,0 +1,32 @@
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* 곡 줄 앞 썸네일 16:9 */
+.thumb {
+  flex: none;
+  width: 64px;
+  height: 36px;
+  border-radius: var(--mantine-radius-sm);
+  object-fit: cover;
+  background-color: var(--mantine-color-default-hover);
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
