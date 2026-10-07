@@ -13,6 +13,7 @@ const base: TripQueryRow = {
   lng: null,
   taker_member_id: "m2",
   forecast: null,
+  entry_password: "pass1234",
   created_at: "2026-10-06T00:00:00Z",
   updated_at: "2026-10-06T08:07:23Z",
   members: [
@@ -88,6 +89,10 @@ describe("toTripData", () => {
     expect(d.coords).toBeNull();
     expect(toTripData({ ...base, lat: 37.6, lng: 127.5 }).coords).toEqual({ lat: 37.6, lng: 127.5 });
     expect(toTripData({ ...base, lat: 37.6 }).coords).toBeNull();
+  });
+
+  it("입장 비밀번호는 화면 데이터에 넣지 않는다 (클라이언트로 직렬화되므로)", () => {
+    expect(JSON.stringify(d)).not.toContain("pass1234");
   });
 });
 
