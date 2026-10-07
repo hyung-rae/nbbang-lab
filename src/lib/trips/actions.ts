@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { notifyTripChanged } from "@/lib/realtime/notify";
 import { supabaseServer } from "@/lib/supabase/server";
+import { geocode } from "@/lib/weather/geocode";
 import {
   MAX_MEMBERS,
   MAX_SHOPPING,
@@ -113,6 +114,7 @@ export async function saveSettings(slug: string, input: unknown): Promise<Action
   return run(slug, async () => {
     const s = check(settingsSchema, input);
     const tripId = await tripIdOf(slug);
+    const before = s.trip ? await placeOf(tripId) : null;
     const { error } = await supabaseServer().rpc("save_trip_settings", {
       p_trip_id: tripId,
       p_trip: s.trip,
@@ -122,11 +124,40 @@ export async function saveSettings(slug: string, input: unknown): Promise<Action
       p_max: MAX_MEMBERS,
     });
     throwIf(error);
+    if (s.trip && before) await fillCoords(tripId, s.trip.address, before);
   }, {
     "23503": "지출에 들어간 사람은 뺄 수 없어요. 그 지출을 먼저 고치거나 지워 주세요.",
     "23505": "같은 이름이 이미 있어요. 구별되게 적어 주세요.",
     NB001: `최대 ${MAX_MEMBERS}명까지 추가할 수 있어요.`,
   });
+}
+
+/** 저장 전 주소·좌표 유무. 읽지 못하면 null — 좌표 채우기만 건너뛰고 설정 저장은 막지 않는다 */
+async function placeOf(tripId: string): Promise<{ address: string | null; hasCoords: boolean } | null> {
+  const { data, error } = await supabaseServer().from("trips").select("address, lat, lng").eq("id", tripId).single();
+  if (error) {
+    console.error("[trip coords]", error);
+    return null;
+  }
+  return { address: data.address, hasCoords: data.lat != null && data.lng != null };
+}
+
+/**
+ * 숙소 좌표(날씨용)를 주소에 맞춘다 — 주소가 바뀌었거나, 주소는 있는데 좌표가 없을 때(키를 나중에 넣은 경우 등).
+ * DB 함수 밖에서 저장 뒤에 따로 쓰므로, 그사이 다른 화면이 주소를 또 바꿨으면 건드리지 않는다.
+ * 지오코딩·좌표 쓰기가 실패해도 설정 저장은 성공으로 둔다 (좌표가 비면 날씨 줄만 숨는다)
+ */
+async function fillCoords(tripId: string, address: string | null, before: { address: string | null; hasCoords: boolean }) {
+  const changed = address !== before.address;
+  if (!changed && (!address || before.hasCoords)) return;
+  const coords = address ? await geocode(address) : null;
+  if (!changed && !coords) return;
+  const update = supabaseServer()
+    .from("trips")
+    .update({ lat: coords?.lat ?? null, lng: coords?.lng ?? null })
+    .eq("id", tripId);
+  const { error } = await (address === null ? update.is("address", null) : update.eq("address", address));
+  if (error) console.error("[trip coords]", error);
 }
 
 /** 덤탱이 쓸 사람. null 이면 자동(가장 많이 받을 사람) */
