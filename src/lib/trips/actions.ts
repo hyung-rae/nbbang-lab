@@ -251,11 +251,3 @@ export async function deleteShoppingItem(slug: string, itemId: string): Promise<
     throwIf(error);
   });
 }
-
-export async function clearDoneShopping(slug: string): Promise<ActionResult> {
-  return run(slug, async () => {
-    const tripId = await tripIdOf(slug);
-    const { error } = await supabaseServer().from("shopping_items").delete().eq("trip_id", tripId).eq("done", true);
-    throwIf(error);
-  });
-}
