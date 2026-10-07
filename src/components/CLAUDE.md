@@ -9,13 +9,13 @@
 | `trip/*-tab.tsx`, `expense-sheet.tsx`, `ticket.tsx`, `treemap.tsx` | 탭별 화면, 지출 입력 시트(Mantine `Drawer` 아래쪽), 여행 티켓, 트리맵 |
 | `trip/ticket.tsx` 숙소 패널 | 주소 줄 + 오른쪽 아이콘 [주소 복사][네이버 지도][카카오맵], 둘째 줄 **지금 날씨**(`☁️ 흐림 18° · 체감 16°` / `HH:MM 기준 · Open-Meteo` / [↻]). 주소 없으면 패널째 숨김 |
 | `trip/use-live-updates.ts` | 다른 화면 변경 신호 구독 → `router.refresh()` (재연결·탭 다시 보일 때도) |
-| `music/music-tab.tsx` | 음악 탭 — 시대(선택)·테마(필수, 상황·장르 중 하나) 칩 → `getSongs` 후보 중 7곡, [다시 뽑기]는 화면에서만(재호출 없음). 제목 옆 YouTube 아이콘(출처), 곡 줄은 썸네일 + 제목 · 가수, **누르는 곳 없음**(사용자 결정). 저장 없음, 멤버 없어도 보임 |
+| `music/music-tab.tsx` | 음악 탭 — 시대·테마(상황·장르 중 하나) 칩, 열면 기본 칸 **2000년대 · 아이돌 댄스**를 바로 불러온다(2026-10-07 사용자 지시) → `getSongs` 후보 중 7곡, [다시 뽑기]는 화면에서만(재호출 없음). 제목 옆 YouTube 아이콘(출처), 곡 줄은 썸네일 + 제목 · 가수, **누르는 곳 없음**(사용자 결정). 저장 없음, 멤버 없어도 보임 |
 | `game/` | 몰빵 게임 — `game-tab`(게임 고르기·참가자·결과) + 룰렛·사다리·폭탄·카드. 명세의 "미션 고르기"는 Mantine 전환 때 뺐다(2026-10-07) |
 | `form/` | `DatePicker`·`DateRangePicker`(Mantine `DatePickerInput`, `ko`·일요일 시작), `OptionSelect`(Mantine `Select`) |
-| `trips/`, `home/`, `app-header.tsx` | 여행 목록(휴지통은 관리자만), 새 여행 폼(관리자만 — 참여자 홈은 로고 + 여행 목록 버튼), 공통 헤더(`admin` 이면 로그아웃). 홈 소개 카드 아래 GitHub 저장소 링크(`github-mark.tsx` Octicons SVG, 주소 `site.ts` `REPO_URL`) |
+| `trips/`, `home/`, `app-header.tsx` | 여행 목록(여행 하나가 카드 하나 — 공용 `list.module.css` 구분선 대신 `trip-list.module.css`, 휴지통은 관리자만. 참여자가 여행을 누르면 **입장 비밀번호 창**(`trip-password-modal.tsx`) → 맞으면 이동, 관리자는 바로 이동. 비밀번호는 임시로 모든 여행 `1111`(2026-10-07 사용자 결정, 여행별 비밀번호 기능 때 바꾼다) — 브라우저에서만 확인하는 화면 관문이라 보호가 아니다: 값이 공개 번들에 보이고 여행 링크·복사한 링크로는 그대로 들어간다), 새 여행 폼(관리자만 — 참여자 홈은 소개 카드 오른쪽 아래 [여행 목록 보기 →] 버튼, 올리면 화살표가 오른쪽으로). 로고는 소개 카드 "엔빵" 제목 왼쪽(흰색으로 뒤집음), 공통 헤더(`admin` 이면 로그아웃). 홈 소개 카드 아래 GitHub 저장소 링크(`github-mark.tsx` Octicons SVG, 주소 `site.ts` `REPO_URL`). 소개 카드 안 맨 아래 **사용 방법**(`home/how-to-use.tsx`, 옅은 선으로 나눔 — 이메일 신청 → 링크·입장 비밀번호 받기 → 여행 목록에서 입장, 신청 항목. 관리자·참여자 모두, 이메일 `site.ts` `ADMIN_EMAIL`) |
 | `auth/login-form.tsx` | `/admin` 관리자 비밀번호 한 칸. **화면에 로그인 링크는 없다** — 관리자가 주소를 직접 친다(사용자 결정) |
-| `copy-link-button.tsx` | 여행 링크 복사 아이콘 — 여행 목록 줄(누구나)·여행 화면 헤더(`AppHeader sharePath`). 설정 탭의 공유 섹션은 없앴다(2026-10-07) |
-| `page-shell.tsx`, `link-button.tsx`, `notify.ts`, `list.module.css` | 화면 틀(가운데 36rem), 버튼 모양 링크, 알림 `toast`/`toast.error`, 카드 안 목록 줄 스타일 |
+| `copy-link-button.tsx` | 여행 링크 복사 아이콘(공유 모양) — 여행 목록 줄(누구나)·여행 티켓 초록 머리 오른쪽 위(`ticket.tsx`, 앱 헤더에서 옮김). 정산 카드의 같은 모양 아이콘은 정산 내용 복사. 설정 탭의 공유 섹션은 없앴다(2026-10-07) |
+| `page-shell.tsx`, `link-button.tsx`, `notify.ts`, `list.module.css` | 화면 틀(가운데 36rem), 버튼 모양 링크, 알림 `toast`/`toast.error`(위쪽 가운데, 초록·빨강으로 칠한 바탕 + 흰 굵은 글자 + 체크·느낌표 아이콘, 닫기 버튼 없이 2.4초·4초 뒤 사라짐), 카드 안 목록 줄 스타일 |
 | `page-loader.tsx` | 화면 이동 로딩(가운데 아이콘 + 도는 원). `app/loading.tsx`(데이터 기다리는 동안) + `app/template.tsx`(첫 경로가 바뀌는 이동 직후 1초 덮기, 타이밍은 CSS — 서버 지연은 `refresh()` 까지 느려져서 안 씀. `/t/a`→`/t/b` 는 안 덮음). 루트 loading 이라 없는 여행 링크도 200(+noindex) |
 
 ## 스타일 체계 (Mantine 9, 2026-10-07 shadcn·Tailwind 에서 전면 교체)
@@ -50,7 +50,7 @@
   - `Chip` 은 children 을 block `span` 으로 감싼다 → 아바타+이름은 안쪽을 `Group component="span"` 으로 한 번 더 감싼다 (`parts.tsx`).
   - `Group` 은 `component="form"` 타입이 안 맞는다 — `<form>` 안에 `Group` 을 둔다 (`Paper`·`Box`·`Stack` 은 된다).
   - `Notifications` 에 `style` 을 주면 **위치별 컨테이너 6개 모두**에 붙는다 — `bottom` 을 주면 top-center 컨테이너가 화면을 덮어 클릭을 가로챈다.
-    `app/notifications.module.css` 처럼 `[data-position=…]` 으로 한 곳만 고친다.
+    위치를 손볼 때는 `classNames.root` + `[data-position=…]` 으로 한 곳만 고친다. 지금은 `top-center` 기본 위치(2026-10-07 사용자 지시 — 위에서 내려오고 닫기 버튼 없이 저절로 사라짐)라 손대지 않는다.
   - 아래쪽 `Drawer` 는 `size="auto"` 여도 화면 높이까지 늘어난다 → `styles.content` 에 `height: auto`·`flex: 0 0 auto`. 열릴 때 포커스는 `data-autofocus` 칸으로.
   - 아래쪽 시트를 끌어내려 닫는 동작은 없다(바깥·X·Esc).
   - **`DatePickerInput type="range"`** (코드 리뷰·실측): 첫 클릭의 `[d, null]` 을 부모에 `end = start` 로 올리면 제어 값이 `[d, d]` 로 돌아와 범위가 끝난다
