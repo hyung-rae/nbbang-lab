@@ -1,0 +1,11 @@
+/* 여행 목록: 여행 하나가 카드 하나 (구분선 대신 카드 사이 간격) */
+.cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 줄 hover 바탕이 카드 둥근 모서리를 넘지 않게 */
+.card {
+  overflow: hidden;
+}
