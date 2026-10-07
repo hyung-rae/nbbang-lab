@@ -10,6 +10,7 @@ import { defaultExpenseDate } from "@/lib/domain/dates";
 import { settle } from "@/lib/domain/settle";
 import { categoryRows } from "@/lib/domain/treemap";
 import type { TripData } from "@/lib/domain/types";
+import type { CurrentWeather } from "@/lib/domain/weather";
 import { ExpenseListTab } from "./expense-list-tab";
 import { ExpenseSheet, type SheetState } from "./expense-sheet";
 import { Empty } from "./parts";
@@ -30,7 +31,16 @@ const TABS = [
 type Tab = (typeof TABS)[number][0];
 
 /** 여행 화면 전체. 데이터는 서버가 내려 주고, 바뀌면 Server Action 의 refresh() 로 새 props 가 온다 */
-export function TripApp({ data, today }: { data: TripData; today: string }) {
+export function TripApp({
+  data,
+  today,
+  weather,
+}: {
+  data: TripData;
+  today: string;
+  /** 서버가 기다리지 않고 넘기는 숙소 지금 날씨 — 티켓이 Suspense 로 따로 기다린다 */
+  weather: Promise<CurrentWeather | null>;
+}) {
   const [tab, setTab] = useState<Tab>("settle");
   const [sheet, setSheet] = useState<SheetState>({ open: false });
   const [last, setLast] = useState<{ date?: string; payerId: string | null }>({ payerId: null });
@@ -79,7 +89,7 @@ export function TripApp({ data, today }: { data: TripData; today: string }) {
     <>
       <PageShell pb="calc(170px + env(safe-area-inset-bottom))" gap={22}>
         <AppHeader />
-        <Ticket data={data} today={today} total={result.total} />
+        <Ticket data={data} today={today} total={result.total} weather={weather} />
         <Stack role="tabpanel" gap={36}>
           {body}
         </Stack>
