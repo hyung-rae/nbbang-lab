@@ -5,7 +5,6 @@ import { IBM_Plex_Sans_KR } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, siteUrl } from "@/lib/site";
 import { theme } from "@/theme";
 import "./globals.css";
-import notificationClasses from "./notifications.module.css";
 
 // 한글 글리프는 subsets 로 미리 받을 수 없어(latin 만 제공) preload 를 끈다
 const body = IBM_Plex_Sans_KR({
@@ -55,7 +54,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <MantineProvider theme={theme} defaultColorScheme="auto">
           {children}
-          <Notifications position="bottom-center" classNames={{ root: notificationClasses.root }} />
+          {/* 위에서 내려오고 닫기 버튼 없이 저절로 사라진다 (notify.ts autoClose) */}
+          <Notifications position="top-center" />
         </MantineProvider>
       </body>
     </html>
