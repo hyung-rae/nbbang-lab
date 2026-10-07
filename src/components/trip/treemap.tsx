@@ -1,10 +1,11 @@
 "use client";
 
+import { Box, Paper, Text, UnstyledButton } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
 import { percent, won } from "@/lib/domain/format";
 import { layoutTreemap, treemapLabelLevel, type CategoryRow } from "@/lib/domain/treemap";
-import { cn } from "@/lib/utils";
-import { CategoryDot, categoryBg } from "./parts";
+import { CategoryDot, categoryColor, filledColor, inkOn } from "./parts";
+import classes from "./treemap.module.css";
 
 const GAP = 2;
 
@@ -27,79 +28,70 @@ export function Treemap({ rows, total }: { rows: CategoryRow[]; total: number })
 
   const current = rows.find((r) => r.category === selected) ?? null;
   const toggle = (c: string) => setSelected((s) => (s === c ? null : c));
-  const dim = (c: string) => current !== null && current.category !== c;
+  const dim = (c: string) => (current !== null && current.category !== c ? classes.dim : "");
 
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-card p-3">
-      <div ref={box} className="relative h-60 overflow-hidden rounded-[10px] bg-secondary md:h-[300px]" role="img" aria-label="분류별 지출 트리맵">
+    <Paper withBorder radius="lg" p="sm">
+      <div ref={box} className={classes.box} role="img" aria-label="분류별 지출 트리맵">
         {layoutTreemap(rows, size.w, size.h).map((c) => {
           const r = c.item;
           const w = c.w - GAP;
           const h = c.h - GAP;
           const level = treemapLabelLevel(w, h);
+          const color = categoryColor(r.category);
           return (
-            <button
+            <UnstyledButton
               key={r.category}
-              type="button"
               aria-label={`${r.category} ${won(r.amount)} ${percent(r.amount, total)}`}
               aria-pressed={current?.category === r.category}
               onClick={() => toggle(r.category)}
-              className={cn(
-                "absolute flex flex-col items-start justify-start gap-px overflow-hidden rounded-md px-[9px] py-2 text-left leading-tight text-cat-ink transition-opacity",
-                categoryBg(r.category),
-                dim(r.category) && "opacity-30",
-              )}
-              style={{ left: c.x + GAP / 2, top: c.y + GAP / 2, width: Math.max(0, w), height: Math.max(0, h) }}
+              className={`${classes.cell} ${dim(r.category)}`}
+              style={{
+                left: c.x + GAP / 2,
+                top: c.y + GAP / 2,
+                width: Math.max(0, w),
+                height: Math.max(0, h),
+                backgroundColor: filledColor(color),
+                color: inkOn(color),
+              }}
             >
-              {level !== "none" && <span className="text-[13px] font-semibold whitespace-nowrap">{r.category}</span>}
-              {level === "full" && (
-                <span className="font-heading text-lg whitespace-nowrap tabular-nums">{won(r.amount)}</span>
-              )}
-              {(level === "full" || level === "pct") && (
-                <span className="text-xs opacity-85">{percent(r.amount, total)}</span>
-              )}
-            </button>
+              {level !== "none" && <Text span size="sm" fw={600} c="inherit">{r.category}</Text>}
+              {level === "full" && <Text span fz={18} fw={700} c="inherit">{won(r.amount)}</Text>}
+              {(level === "full" || level === "pct") && <Text span size="xs" opacity={0.85} c="inherit">{percent(r.amount, total)}</Text>}
+            </UnstyledButton>
           );
         })}
       </div>
-      <p className="min-h-[1.4em] text-[13.5px]" aria-live="polite">
+      <Text size="sm" mih="1.4em" my="sm" aria-live="polite">
         {current ? (
           <>
-            <CategoryDot category={current.category} className="mr-1 inline-block" />
-            <strong>{current.category}</strong> · {current.count}건 · <strong className="tabular-nums">{won(current.amount)}</strong> (
-            {percent(current.amount, total)})
+            <CategoryDot category={current.category} /> <strong>{current.category}</strong> · {current.count}건 ·{" "}
+            <strong>{won(current.amount)}</strong> ({percent(current.amount, total)})
           </>
         ) : (
           <>
-            총 <strong className="tabular-nums">{won(total)}</strong> · {rows.length}개 분류
+            총 <strong>{won(total)}</strong> · {rows.length}개 분류
           </>
         )}
-      </p>
-      <ul className="flex flex-col">
-        {rows.map((r, i) => (
-          <li key={r.category}>
-            <button
-              type="button"
-              aria-pressed={current?.category === r.category}
-              onClick={() => toggle(r.category)}
-              className={cn(
-                "flex min-h-10 w-full items-center gap-2.5 px-1 py-1.5 text-left text-sm transition-opacity",
-                i > 0 && "border-t border-border",
-                dim(r.category) && "opacity-30",
-              )}
-            >
+      </Text>
+      <Box component="ul" m={0} p={0} style={{ listStyle: "none" }}>
+        {rows.map((r) => (
+          <li key={r.category} className={`${classes.item} ${dim(r.category)}`}>
+            <UnstyledButton aria-pressed={current?.category === r.category} onClick={() => toggle(r.category)} className={classes.row}>
               <CategoryDot category={r.category} />
-              <span className="min-w-0 flex-1">{r.category}</span>
-              <span className="whitespace-nowrap tabular-nums">
+              <Text span size="sm" flex={1} miw={0}>
+                {r.category}
+              </Text>
+              <Text span size="sm" style={{ whiteSpace: "nowrap" }}>
                 {won(r.amount)}
-                <small className="ml-2 inline-block min-w-[3.2em] text-right text-muted-foreground">
+                <Text span size="xs" c="dimmed" ml={8} display="inline-block" miw="3.2em" ta="right">
                   {percent(r.amount, total)}
-                </small>
-              </span>
-            </button>
+                </Text>
+              </Text>
+            </UnstyledButton>
           </li>
         ))}
-      </ul>
-    </div>
+      </Box>
+    </Paper>
   );
 }

@@ -1,9 +1,12 @@
+import { Group, Stack, Text } from "@mantine/core";
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { connection } from "next/server";
 import { AppHeader } from "@/components/app-header";
+import { LinkActionIcon } from "@/components/link-button";
+import { PageShell } from "@/components/page-shell";
+import { SectionTitle } from "@/components/trip/parts";
 import { TripList } from "@/components/trips/trip-list";
-import { SectionTitle, btnPrimary } from "@/components/trip/parts";
 import { listTrips } from "@/lib/trips/queries";
 
 export const metadata: Metadata = { title: "여행 목록", robots: { index: false } };
@@ -13,20 +16,20 @@ export default async function TripsPage() {
   await connection();
   const trips = await listTrips();
   return (
-    <main className="mx-auto flex w-full max-w-[36rem] flex-col gap-6 px-4 pt-3 pb-10">
+    <PageShell>
       <AppHeader current="trips" />
-      <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-2">
+      <Stack gap="sm">
+        <Group justify="space-between" gap="xs">
           <SectionTitle count={`${trips.length}개`}>여행 목록</SectionTitle>
-          <Link href="/" className={btnPrimary}>
-            + 새 여행
-          </Link>
-        </div>
+          <LinkActionIcon href="/" aria-label="새 여행" variant="filled">
+            <Plus aria-hidden size={18} />
+          </LinkActionIcon>
+        </Group>
         <TripList trips={trips} />
-        <p className="text-[12.5px] text-muted-foreground">
+        <Text size="xs" c="dimmed">
           지금은 로그인이 없어서 만든 여행이 모두 보여요. 지우면 멤버·지출·장보기까지 함께 사라지고 되돌릴 수 없어요.
-        </p>
-      </section>
-    </main>
+        </Text>
+      </Stack>
+    </PageShell>
   );
 }

@@ -1,20 +1,23 @@
 "use client";
 
+import { Button, Stack, Text, UnstyledButton } from "@mantine/core";
+import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { GameTab } from "@/components/game/game-tab";
+import { PageShell } from "@/components/page-shell";
 import { defaultExpenseDate } from "@/lib/domain/dates";
 import { settle } from "@/lib/domain/settle";
 import { categoryRows } from "@/lib/domain/treemap";
 import type { TripData } from "@/lib/domain/types";
-import { cn } from "@/lib/utils";
 import { ExpenseListTab } from "./expense-list-tab";
 import { ExpenseSheet, type SheetState } from "./expense-sheet";
-import { Empty, btnPrimary } from "./parts";
+import { Empty } from "./parts";
 import { SettingsTab } from "./settings-tab";
 import { SettleTab } from "./settle-tab";
 import { ShopTab } from "./shop-tab";
-import { Ticket, UpdatedAt } from "./ticket";
+import { Ticket } from "./ticket";
+import classes from "./trip-app.module.css";
 import { useLiveUpdates } from "./use-live-updates";
 
 const TABS = [
@@ -55,10 +58,8 @@ export function TripApp({ data, today }: { data: TripData; today: string }) {
   else if (noMembers)
     body = (
       <Empty title="함께 가는 사람이 아직 없어요">
-        <p>설정에서 친구들을 먼저 추가해 주세요.</p>
-        <button type="button" className={btnPrimary} onClick={goSettings}>
-          친구 추가하러 가기
-        </button>
+        <Text size="sm">설정에서 친구들을 먼저 추가해 주세요.</Text>
+        <Button onClick={goSettings}>친구 추가하러 가기</Button>
       </Empty>
     );
   else if (tab === "game")
@@ -76,50 +77,39 @@ export function TripApp({ data, today }: { data: TripData; today: string }) {
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-[36rem] flex-col gap-[22px] px-4 pt-3 pb-[calc(170px+env(safe-area-inset-bottom))]">
+      <PageShell pb="calc(170px + env(safe-area-inset-bottom))" gap={22}>
         <AppHeader />
         <Ticket data={data} today={today} total={result.total} />
-        <UpdatedAt iso={data.updatedAt} />
-        <div role="tabpanel" className="flex flex-col gap-9">
+        <Stack role="tabpanel" gap={36}>
           {body}
-        </div>
-      </div>
+        </Stack>
+      </PageShell>
 
-      <nav
-        aria-label="화면 이동"
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]"
-      >
-        <div className="relative mx-auto max-w-[36rem] px-3">
+      <nav aria-label="화면 이동" className={classes.nav}>
+        <div className={classes.inner}>
           {showFab && (
-            <button
-              type="button"
+            <Button
+              className={classes.fab}
+              leftSection={<Plus aria-hidden size={16} />}
               onClick={() => setSheet({ open: true, expenseId: null })}
-              className="absolute right-3 bottom-[calc(100%+14px)] inline-flex min-h-[52px] items-center gap-1.5 rounded-full bg-primary pr-5 pl-4 text-[15px] font-semibold text-primary-foreground shadow-app"
             >
-              <b aria-hidden className="text-[22px] leading-none font-medium">
-                +
-              </b>
               지출 추가
-            </button>
+            </Button>
           )}
-          <div role="tablist" className="flex h-[62px]">
+          <div role="tablist" className={classes.tabs}>
             {TABS.map(([id, label]) => (
-              <button
+              <UnstyledButton
                 key={id}
-                type="button"
                 role="tab"
                 aria-selected={tab === id}
+                className={classes.tab}
                 onClick={() => {
                   setTab(id);
                   window.scrollTo(0, 0);
                 }}
-                className={cn(
-                  "relative min-w-0 flex-1 text-[clamp(12.5px,3.5vw,15px)] font-semibold whitespace-nowrap text-muted-foreground",
-                  "aria-selected:text-accent-foreground aria-selected:before:absolute aria-selected:before:inset-x-[32%] aria-selected:before:top-0 aria-selected:before:h-[3px] aria-selected:before:rounded-b-[3px] aria-selected:before:bg-primary aria-selected:before:content-['']",
-                )}
               >
                 {label}
-              </button>
+              </UnstyledButton>
             ))}
           </div>
         </div>

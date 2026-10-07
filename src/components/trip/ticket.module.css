@@ -1,0 +1,79 @@
+.ticket {
+  position: relative;
+  border-radius: var(--mantine-radius-lg);
+  background-color: var(--mantine-color-body);
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.head {
+  border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
+  background-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-color-white);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) 22px;
+}
+
+/* 티켓 절취선 + 양옆 반원 홈 (바탕색으로 뚫어 보이게) */
+.stats {
+  position: relative;
+  border-top: 2px dashed var(--mantine-color-default-border);
+  padding: 18px var(--mantine-spacing-lg);
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    top: -11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--app-bg);
+  }
+  &::before {
+    left: -10px;
+  }
+  &::after {
+    right: -10px;
+  }
+}
+
+.address {
+  margin-top: 14px;
+  border-radius: var(--mantine-radius-md);
+  background-color: rgb(255 255 255 / 0.1);
+  padding: 2px var(--mantine-spacing-sm);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.link {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--mantine-radius-md);
+  background-color: rgb(255 255 255 / 0.14);
+  padding-inline: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--mantine-color-white);
+  text-decoration: none;
+
+  &:hover {
+    background-color: rgb(255 255 255 / 0.22);
+  }
+}
+
+.brand {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border-radius: 5px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { easeOutQuart, secureRandInt, wheelTargetAngle } from "@/lib/domain/game";
 import type { Member } from "@/lib/domain/types";
-import { GameDesc, goButton, memberFill, runAnimation } from "./shared";
+import { inkOn, memberColor } from "@/components/trip/parts";
+import { GameDesc, GoButton, memberFill, runAnimation } from "./shared";
 
 const R = 92;
 const C = 100;
@@ -52,8 +53,8 @@ export function Roulette({ players, locked, onWin }: { players: Member[]; locked
   return (
     <>
       <GameDesc>버튼을 누르면 룰렛이 돌아가요. 화살표가 멈춘 칸이 당첨!</GameDesc>
-      <svg className="block h-auto w-[min(100%,300px)]" viewBox="0 0 200 200" role="img" aria-label="참가자 룰렛">
-        <circle cx="100" cy="100" r="96" style={{ fill: "var(--secondary)", stroke: "var(--border)", strokeWidth: 2 }} />
+      <svg style={{ display: "block", width: "min(100%, 300px)", height: "auto" }} viewBox="0 0 200 200" role="img" aria-label="참가자 룰렛">
+        <circle cx="100" cy="100" r="96" style={{ fill: "var(--mantine-color-default-hover)", stroke: "var(--mantine-color-default-border)", strokeWidth: 2 }} />
         <g ref={g} transform={`rotate(${rest.toFixed(2)} 100 100)`}>
           {players.map((m, i) => {
             const a0 = i * s;
@@ -67,7 +68,7 @@ export function Roulette({ players, locked, onWin }: { players: Member[]; locked
               <g key={m.id}>
                 <path
                   d={`M${C} ${C}L${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${R} ${R} 0 ${s > 180 ? 1 : 0} 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`}
-                  style={{ fill: memberFill(m.color), stroke: "var(--card)", strokeWidth: 1.5 }}
+                  style={{ fill: memberFill(m.color), stroke: "var(--mantine-color-body)", strokeWidth: 1.5 }}
                 />
                 <text
                   x={tp[0].toFixed(2)}
@@ -76,7 +77,7 @@ export function Roulette({ players, locked, onWin }: { players: Member[]; locked
                   dominantBaseline="central"
                   fontSize={fs}
                   transform={`rotate(${rot.toFixed(2)} ${tp[0].toFixed(2)} ${tp[1].toFixed(2)})`}
-                  style={{ fill: "var(--av-ink)", fontFamily: "var(--font-display)" }}
+                  style={{ fill: inkOn(memberColor(m.color)), fontWeight: 700 }}
                 >
                   {Array.from(m.name).slice(0, 5).join("")}
                 </text>
@@ -84,15 +85,15 @@ export function Roulette({ players, locked, onWin }: { players: Member[]; locked
             );
           })}
         </g>
-        <circle cx="100" cy="100" r="13" style={{ fill: "var(--card)", stroke: "var(--border)", strokeWidth: 2 }} />
+        <circle cx="100" cy="100" r="13" style={{ fill: "var(--mantine-color-body)", stroke: "var(--mantine-color-default-border)", strokeWidth: 2 }} />
         <path
           d="M88 1h24l-12 24z"
-          style={{ fill: "var(--foreground)", stroke: "var(--card)", strokeWidth: 2, strokeLinejoin: "round" }}
+          style={{ fill: "var(--mantine-color-text)", stroke: "var(--mantine-color-body)", strokeWidth: 2, strokeLinejoin: "round" }}
         />
       </svg>
-      <button type="button" className={goButton} disabled={spinning || locked} onClick={spin}>
+      <GoButton disabled={spinning || locked} onClick={spin}>
         {spinning ? "돌아가는 중…" : "돌리기"}
-      </button>
+      </GoButton>
     </>
   );
 }

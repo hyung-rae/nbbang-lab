@@ -1,10 +1,11 @@
 "use client";
 
+import { Box, Button, Group, Stack, Text, UnstyledButton } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
-import { Avatar, btnGhost, btnText } from "@/components/trip/parts";
+import { Avatar } from "@/components/trip/parts";
 import { LADDER_H, ladderX, ladderY, newLadder, partialPoints } from "@/lib/domain/game";
 import type { Member } from "@/lib/domain/types";
-import { cn } from "@/lib/utils";
+import classes from "./game.module.css";
 import { GameDesc, memberFill, runAnimation } from "./shared";
 
 /** 사다리 — 이름을 눌러 타고, 당첨 칸은 도착해야 공개 */
@@ -52,30 +53,31 @@ export function Ladder({ players, locked, onWin }: { players: Member[]; locked: 
   return (
     <>
       {!locked && <GameDesc>자기 이름을 눌러 사다리를 타요. 당첨 칸은 도착해야 보여요.</GameDesc>}
-      <div className="flex w-full flex-col gap-1.5">
-        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+      <Stack gap={6} w="100%">
+        <Box style={{ display: "grid", gap: 4, gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
           {players.map((m, i) => (
-            <button
+            <UnstyledButton
               key={m.id}
-              type="button"
               disabled={started[i] || locked}
               onClick={() => go([i])}
               style={started[i] ? { borderColor: memberFill(m.color), boxShadow: `inset 0 0 0 1px ${memberFill(m.color)}` } : undefined}
-              className="flex min-w-0 flex-col items-center gap-[3px] rounded-[10px] border border-border bg-secondary px-0.5 py-1.5 text-[12.5px] font-semibold disabled:cursor-default"
+              className={classes.ladderName}
             >
-              <Avatar member={m} className="size-[26px] text-xs" />
-              <span className="max-w-full truncate">{m.name}</span>
-            </button>
+              <Avatar member={m} size={26} />
+              <Text span inherit truncate maw="100%">
+                {m.name}
+              </Text>
+            </UnstyledButton>
           ))}
-        </div>
-        <svg className="block h-60 w-full" viewBox={`0 0 ${n * 60} ${LADDER_H}`} preserveAspectRatio="none" aria-hidden>
+        </Box>
+        <svg style={{ display: "block", width: "100%", height: 240 }} viewBox={`0 0 ${n * 60} ${LADDER_H}`} preserveAspectRatio="none" aria-hidden>
           {players.map((_, c) => (
-            <line key={`v${c}`} x1={ladderX(c)} y1={0} x2={ladderX(c)} y2={LADDER_H} vectorEffect="non-scaling-stroke" style={{ stroke: "var(--border)", strokeWidth: 3 }} />
+            <line key={`v${c}`} x1={ladderX(c)} y1={0} x2={ladderX(c)} y2={LADDER_H} vectorEffect="non-scaling-stroke" style={{ stroke: "var(--mantine-color-default-border)", strokeWidth: 3 }} />
           ))}
           {ladder.rungs.map((r, k) =>
             r.map((on, j) =>
               on ? (
-                <line key={`h${k}-${j}`} x1={ladderX(j)} y1={ladderY(k)} x2={ladderX(j + 1)} y2={ladderY(k)} vectorEffect="non-scaling-stroke" style={{ stroke: "var(--border)", strokeWidth: 3 }} />
+                <line key={`h${k}-${j}`} x1={ladderX(j)} y1={ladderY(k)} x2={ladderX(j + 1)} y2={ladderY(k)} vectorEffect="non-scaling-stroke" style={{ stroke: "var(--mantine-color-default-border)", strokeWidth: 3 }} />
               ) : null,
             ),
           )}
@@ -93,36 +95,29 @@ export function Ladder({ players, locked, onWin }: { players: Member[]; locked: 
             ) : null,
           )}
         </svg>
-        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        <Box style={{ display: "grid", gap: 4, gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
           {players.map((m, j) => {
             const shown = locked || ladder.paths.some((p, i) => arrived[i] && p.end === j);
             const hit = j === ladder.prize;
             return (
-              <span
-                key={m.id}
-                className={cn(
-                  "grid min-h-9 place-items-center rounded-lg border border-dashed border-border bg-secondary font-heading text-base text-muted-foreground",
-                  shown && !hit && "border-solid text-foreground",
-                  shown && hit && "border-solid border-minus bg-minus text-on-danger",
-                )}
-              >
+              <span key={m.id} className={classes.slot} data-shown={shown || undefined} data-hit={(shown && hit) || undefined}>
                 {shown ? (hit ? "당첨" : "통과") : "?"}
               </span>
             );
           })}
-        </div>
-      </div>
+        </Box>
+      </Stack>
       {!locked && (
-        <div className="flex flex-wrap justify-center gap-2">
-          <button type="button" className={btnGhost} onClick={() => go(players.map((_, i) => i))}>
+        <Group gap="xs" justify="center">
+          <Button variant="default" onClick={() => go(players.map((_, i) => i))}>
             한 번에 모두 타기
-          </button>
+          </Button>
           {!anyStarted && (
-            <button type="button" className={btnText} onClick={() => setLadder(newLadder(n))}>
+            <Button variant="subtle" color="gray" onClick={() => setLadder(newLadder(n))}>
               사다리 새로 만들기
-            </button>
+            </Button>
           )}
-        </div>
+        </Group>
       )}
     </>
   );

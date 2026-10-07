@@ -1,14 +1,16 @@
 "use client";
 
+import { Button, Checkbox, Group, Paper, Progress, Stack, Text, TextInput, Title } from "@mantine/core";
 import { useOptimistic, useState, useTransition } from "react";
-import { toast } from "sonner";
 import { OptionSelect } from "@/components/form/option-select";
+import classes from "@/components/list.module.css";
+import { toast } from "@/components/notify";
 import { SHOP_GROUPS, type ShopGroup } from "@/lib/domain/categories";
 import type { ShoppingItem, TripData } from "@/lib/domain/types";
 import { addShoppingItem, clearDoneShopping, deleteShoppingItem, setShoppingDone } from "@/lib/trips/actions";
 import { shoppingSchema, firstError } from "@/lib/trips/schema";
-import { cn } from "@/lib/utils";
-import { ArmedButton, Empty, SectionTitle, btnGhost, btnPrimary, btnText, fieldClass, useAction } from "./parts";
+import { DeleteConfirm, Empty, SectionTitle, TrashButton, useAction } from "./parts";
+import shop from "./shop-tab.module.css";
 
 export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExpense: () => void }) {
   const { slug } = data;
@@ -21,6 +23,13 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
   const [group, setGroup] = useState<ShopGroup>("고기");
   const [error, setError] = useState("");
   const { pending, run } = useAction();
+  // 무엇을 지울지(항목 하나 / 담은 것 전부). 닫히는 동안에도 문구가 남게 열림과 따로 둔다
+  const [target, setTarget] = useState<{ item: ShoppingItem } | "done" | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const ask = (t: { item: ShoppingItem } | "done") => {
+    setTarget(t);
+    setConfirmOpen(true);
+  };
 
   const done = items.filter((x) => x.done).length;
 
@@ -49,62 +58,54 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
   }
 
   return (
-    <section className="flex flex-col gap-2.5">
+    <Stack component="section" gap="sm">
       <SectionTitle count={items.length ? `${items.length}개` : undefined}>장볼 것</SectionTitle>
       {items.length > 0 && (
-        <div className="flex items-center gap-2.5 text-[13px] text-muted-foreground tabular-nums">
-          <span aria-hidden className="h-1.5 flex-1 overflow-hidden rounded-[3px] bg-border">
-            <i
-              className="block h-full rounded-[3px] bg-primary transition-[width]"
-              style={{ width: `${Math.round((done / items.length) * 100)}%` }}
-            />
-          </span>
-          <span>
+        <Group gap={10} wrap="nowrap">
+          <Progress aria-hidden flex={1} size="sm" radius="xl" value={(done / items.length) * 100} />
+          <Text size="sm" c="dimmed">
             {done} / {items.length} 담음
-          </span>
-        </div>
+          </Text>
+        </Group>
       )}
 
       <form
         noValidate
-        className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           add();
         }}
       >
-        <OptionSelect
-          id="s-group"
-          aria-label="분류"
-          value={group}
-          options={SHOP_GROUPS}
-          onChange={setGroup}
-          className="w-auto! flex-[0_0_8em] pr-2"
-        />
-        <label className="sr-only" htmlFor="s-name">
-          살 것
-        </label>
-        <input
-          id="s-name"
-          maxLength={30}
-          autoComplete="off"
-          placeholder="살 것 (예: 삼겹살)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className={cn(fieldClass, "flex-1")}
-        />
-        <button type="submit" className={btnPrimary} disabled={pending}>
-          추가
-        </button>
+        <Group gap="xs" wrap="nowrap" align="flex-start">
+          <OptionSelect id="s-group" aria-label="분류" value={group} options={SHOP_GROUPS} onChange={setGroup} className={shop.group} />
+          <TextInput
+            id="s-name"
+            aria-label="살 것"
+            flex={1}
+            miw={0}
+            maxLength={30}
+            autoComplete="off"
+            placeholder="살 것 (예: 삼겹살)"
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+          />
+          <Button type="submit" loading={pending} style={{ flex: "none" }}>
+            추가
+          </Button>
+        </Group>
       </form>
-      {error && <p className="text-[13px] font-medium text-minus">{error}</p>}
+      {error && (
+        <Text size="sm" c="red" fw={500} role="alert">
+          {error}
+        </Text>
+      )}
 
       {!items.length ? (
         <Empty title="아직 장볼 목록이 없어요">
-          <p>위에서 살 것을 하나씩 추가해 보세요.</p>
+          <Text size="sm">위에서 살 것을 하나씩 추가해 보세요.</Text>
         </Empty>
       ) : (
-        <div className="flex flex-col gap-[18px]">
+        <Stack gap={18}>
           {SHOP_GROUPS.map((g) => {
             const list = items.filter((x) => x.group === g);
             if (!list.length) return null;
@@ -112,69 +113,83 @@ export function ShopTab({ data, onRecordExpense }: { data: TripData; onRecordExp
             // 분류 안에서는 안 담은 것 먼저
             const sorted = [...list.filter((x) => !x.done), ...list.filter((x) => x.done)];
             return (
-              <section key={g} className="flex flex-col gap-2">
-                <div className="flex items-baseline justify-between gap-2 px-1">
-                  <h3 className={cn("text-sm font-semibold", gd === list.length && "text-muted-foreground")}>{g}</h3>
-                  <span className="text-[13px] text-muted-foreground tabular-nums">
+              <Stack component="section" key={g} gap="xs">
+                <Group justify="space-between" align="baseline" gap="xs" px={4}>
+                  <Title order={3} size="h6" c={gd === list.length ? "dimmed" : undefined}>
+                    {g}
+                  </Title>
+                  <Text size="sm" c="dimmed">
                     {gd} / {list.length}
-                  </span>
-                </div>
-                <ul className="overflow-hidden rounded-[14px] border border-border bg-card">
-                  {sorted.map((x, i) => (
-                    <li key={x.id} className={cn("flex items-center gap-1 pr-1.5", i > 0 && "border-t border-border")}>
-                      <label className="group/check relative flex min-h-[52px] min-w-0 flex-1 cursor-pointer items-center gap-3 py-2 pr-1.5 pl-3.5">
-                        <input
-                          type="checkbox"
-                          checked={x.done}
-                          onChange={(e) => toggle(x.id, e.target.checked)}
-                          className="peer pointer-events-none absolute opacity-0"
-                        />
-                        <span
-                          aria-hidden
-                          className="grid size-6 flex-none place-items-center rounded-full border-2 border-border text-[13px] leading-none font-bold text-transparent peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
-                        >
-                          ✓
-                        </span>
-                        <span className="min-w-0 flex-1 peer-checked:text-muted-foreground peer-checked:line-through">
-                          {x.name}
-                        </span>
-                      </label>
-                      <ArmedButton
-                        armedLabel="삭제"
-                        aria-label={`${x.name} 지우기`}
-                        className={cn(btnText, "min-w-10 text-lg font-medium text-minus")}
-                        onConfirm={() => run(() => deleteShoppingItem(slug, x.id))}
-                      >
-                        ×
-                      </ArmedButton>
-                    </li>
+                  </Text>
+                </Group>
+                <Paper component="ul" withBorder radius="lg" className={classes.list}>
+                  {sorted.map((x) => (
+                    <Group component="li" key={x.id} className={classes.row} gap={4} pr={6} wrap="nowrap">
+                      <Checkbox
+                        radius="xl"
+                        flex={1}
+                        miw={0}
+                        py="sm"
+                        pl={14}
+                        checked={x.done}
+                        onChange={(e) => toggle(x.id, e.currentTarget.checked)}
+                        label={x.name}
+                        styles={{
+                          body: { alignItems: "center" },
+                          labelWrapper: { flex: 1, minWidth: 0 },
+                          label: x.done ? { color: "var(--mantine-color-dimmed)", textDecoration: "line-through" } : undefined,
+                        }}
+                      />
+                      <TrashButton
+                        label={`${x.name} 지우기`}
+                        disabled={pending}
+                        onClick={() => ask({ item: x })}
+                      />
+                    </Group>
                   ))}
-                </ul>
-              </section>
+                </Paper>
+              </Stack>
             );
           })}
-        </div>
+        </Stack>
       )}
 
       {items.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <Group gap="xs">
           {done > 0 && (
-            <ArmedButton
-              armedLabel="한 번 더 누르면 지워요"
-              className={btnGhost}
-              disabled={pending}
-              onConfirm={() => run(() => clearDoneShopping(slug), { success: "담은 것을 지웠어요" })}
-            >
+            <Button variant="default" disabled={pending} onClick={() => ask("done")}>
               담은 것 지우기
-            </ArmedButton>
+            </Button>
           )}
           {data.members.length > 0 && (
-            <button type="button" className={btnGhost} onClick={onRecordExpense}>
+            <Button variant="default" onClick={onRecordExpense}>
               장본 금액 지출로 기록
-            </button>
+            </Button>
           )}
-        </div>
+        </Group>
       )}
-    </section>
+      <DeleteConfirm
+        opened={confirmOpen}
+        title={target === "done" ? "담은 것 지우기" : "장볼 것 삭제"}
+        loading={pending}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          if (!target) return;
+          const close = () => setConfirmOpen(false);
+          if (target === "done") run(() => clearDoneShopping(slug), { success: "담은 것을 지웠어요", onSuccess: close });
+          else run(() => deleteShoppingItem(slug, target.item.id), { onSuccess: close });
+        }}
+      >
+        {target === "done" ? (
+          <>
+            담은 것 <strong>{done}개</strong>를 장보기 목록에서 지울까요?
+          </>
+        ) : (
+          <>
+            <strong>{target?.item.name}</strong> 항목을 장보기 목록에서 지울까요?
+          </>
+        )}
+      </DeleteConfirm>
+    </Stack>
   );
 }

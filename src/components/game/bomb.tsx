@@ -1,11 +1,12 @@
 "use client";
 
+import { Group, Text } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/trip/parts";
 import { bombFuseMs, secureRandInt } from "@/lib/domain/game";
 import type { Member } from "@/lib/domain/types";
-import { cn } from "@/lib/utils";
-import { GameDesc, goButton } from "./shared";
+import classes from "./game.module.css";
+import { GameDesc, GoButton } from "./shared";
 
 function star(r1: number, r2: number) {
   const p: string[] = [];
@@ -22,22 +23,22 @@ const BOOM_INNER = star(40, 24);
 function BombSvg({ state }: { state: "idle" | "live" | "boom" }) {
   if (state === "boom") {
     return (
-      <svg className="block size-[150px] animate-boom" viewBox="0 0 120 120" aria-hidden>
-        <polygon points={BOOM_OUTER} style={{ fill: "var(--minus)" }} />
-        <polygon points={BOOM_INNER} style={{ fill: "var(--sun)" }} />
-        <text x="60" y="61" textAnchor="middle" dominantBaseline="central" fontSize="26" style={{ fill: "var(--sun-ink)", fontFamily: "var(--font-display)" }}>
+      <svg className={`${classes.bomb} ${classes.boom}`} viewBox="0 0 120 120" aria-hidden>
+        <polygon points={BOOM_OUTER} style={{ fill: "var(--mantine-color-red-filled)" }} />
+        <polygon points={BOOM_INNER} style={{ fill: "var(--mantine-color-yellow-filled)" }} />
+        <text x="60" y="61" textAnchor="middle" dominantBaseline="central" fontSize="26" style={{ fill: "var(--mantine-color-black)", fontWeight: 800 }}>
           펑!
         </text>
       </svg>
     );
   }
   return (
-    <svg className={cn("block size-[150px]", state === "live" && "animate-wobble")} viewBox="0 0 120 120" aria-hidden>
-      <path d="M84 30Q96 12 106 18" style={{ fill: "none", stroke: "var(--muted-foreground)", strokeWidth: 3, strokeLinecap: "round" }} />
-      <rect x="70" y="30" width="18" height="14" rx="3" transform="rotate(45 79 37)" style={{ fill: "var(--muted-foreground)" }} />
-      <circle cx="52" cy="72" r="40" style={{ fill: "var(--bomb)" }} />
+    <svg className={state === "live" ? `${classes.bomb} ${classes.wobble}` : classes.bomb} viewBox="0 0 120 120" aria-hidden>
+      <path d="M84 30Q96 12 106 18" style={{ fill: "none", stroke: "var(--mantine-color-dimmed)", strokeWidth: 3, strokeLinecap: "round" }} />
+      <rect x="70" y="30" width="18" height="14" rx="3" transform="rotate(45 79 37)" style={{ fill: "var(--mantine-color-dimmed)" }} />
+      <circle cx="52" cy="72" r="40" className={classes.bombBody} />
       <circle cx="38" cy="58" r="8" style={{ fill: "#FFFFFF", opacity: 0.3 }} />
-      {state === "live" && <circle className="animate-spark" cx="106" cy="18" r="8" style={{ fill: "var(--sun)" }} />}
+      {state === "live" && <circle className={classes.spark} cx="106" cy="18" r="8" style={{ fill: "var(--mantine-color-yellow-filled)" }} />}
     </svg>
   );
 }
@@ -81,9 +82,9 @@ export function Bomb({ players, locked, onWin }: { players: Member[]; locked: bo
         <GameDesc>
           시작하면 폭탄이 아무에게나 가요. 폭탄을 든 사람이 버튼을 누르고 <strong>폰을 다음 사람에게 넘겨요</strong>. 언제 터질지는 아무도 몰라요.
         </GameDesc>
-        <button type="button" className={goButton} disabled={locked} onClick={start}>
+        <GoButton disabled={locked} onClick={start}>
           폭탄 시작
-        </button>
+        </GoButton>
       </>
     );
   }
@@ -102,15 +103,13 @@ export function Bomb({ players, locked, onWin }: { players: Member[]; locked: bo
   return (
     <>
       <BombSvg state="live" />
-      <div className="flex items-center gap-2.5 text-[17px]">
-        <Avatar member={cur} className="size-10 text-[17px]" />
-        <span>
+      <Group gap={10} wrap="nowrap">
+        <Avatar member={cur} size={40} />
+        <Text fz={17}>
           <strong>{cur.name}</strong> 손에 폭탄이 있어요
-        </span>
-      </div>
-      <button type="button" className={goButton} onClick={pass}>
-        {next.name}에게 넘기기 →
-      </button>
+        </Text>
+      </Group>
+      <GoButton onClick={pass}>{next.name}에게 넘기기 →</GoButton>
       <GameDesc>째깍째깍… {passes}번 넘김</GameDesc>
     </>
   );

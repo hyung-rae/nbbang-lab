@@ -1,19 +1,16 @@
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import type { Metadata, Viewport } from "next";
-import { Do_Hyeon, IBM_Plex_Sans_KR } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
+import { IBM_Plex_Sans_KR } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, siteUrl } from "@/lib/site";
+import { theme } from "@/theme";
 import "./globals.css";
+import notificationClasses from "./notifications.module.css";
 
 // 한글 글리프는 subsets 로 미리 받을 수 없어(latin 만 제공) preload 를 끈다
-const display = Do_Hyeon({
-  variable: "--font-display",
-  weight: "400",
-  preload: false,
-});
-
 const body = IBM_Plex_Sans_KR({
   variable: "--font-body",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   preload: false,
 });
 
@@ -42,18 +39,24 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ecf1ee" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1412" },
+    // 바탕(--app-bg)과 같게: Mantine gray-0 / dark-8
+    { media: "(prefers-color-scheme: light)", color: "#f8f9fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f1f1f" },
   ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${display.variable} ${body.variable} h-full`}>
-      <body className="min-h-full flex flex-col">
-        {children}
-        {/* 하단 탭바·지출 추가 버튼 위에 뜨도록 */}
-        <Toaster position="bottom-center" offset={{ bottom: 150 }} mobileOffset={{ bottom: 150 }} duration={2400} />
+    <html lang="ko" {...mantineHtmlProps} className={body.variable}>
+      <head>
+        {/* 첫 그림 전에 색 모드를 정해 깜빡임을 막는다. 시스템 설정을 따른다 */}
+        <ColorSchemeScript defaultColorScheme="auto" />
+      </head>
+      <body>
+        <MantineProvider theme={theme} defaultColorScheme="auto">
+          {children}
+          <Notifications position="bottom-center" classNames={{ root: notificationClasses.root }} />
+        </MantineProvider>
       </body>
     </html>
   );

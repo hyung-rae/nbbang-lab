@@ -1,0 +1,36 @@
+/* 카드 안 목록: Paper(withBorder) 안의 ul/ol, 줄 사이 구분선 */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.row + .row {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+/* 줄 전체를 누르는 버튼·링크 */
+.press {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) 14px;
+  text-align: left;
+
+  &:hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+}
+
+/* 줄 안에 링크와 옆 버튼(삭제 등)이 같이 있을 때: 줄 전체를 한 덩어리로 칠한다 */
+.hoverRow {
+  &:hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+
+  & .press:hover {
+    background-color: transparent;
+  }
+}

@@ -11,10 +11,9 @@ import {
   MAX_SHOPPING,
   expenseSchema,
   firstError,
-  memberNameSchema,
   newTripSchema,
+  settingsSchema,
   shoppingSchema,
-  tripInfoSchema,
 } from "./schema";
 import { isValidSlug, newSlug } from "./slug";
 
@@ -106,18 +105,27 @@ export async function deleteTrip(slug: string): Promise<ActionResult> {
   });
 }
 
-export async function updateTripInfo(
-  slug: string,
-  input: { name: string; start: string; end: string; address: string },
-): Promise<ActionResult> {
+/**
+ * 설정 화면 한 번에 저장 — 여행 정보·멤버 빼기·색·추가를 DB 함수 하나(한 트랜잭션)로.
+ * 하나라도 실패하면(지출에 든 사람 빼기·같은 이름·인원 초과) 아무것도 반영되지 않는다
+ */
+export async function saveSettings(slug: string, input: unknown): Promise<ActionResult> {
   return run(slug, async () => {
-    const t = check(tripInfoSchema, input);
+    const s = check(settingsSchema, input);
     const tripId = await tripIdOf(slug);
-    const { error } = await supabaseServer()
-      .from("trips")
-      .update({ name: t.name, start_date: t.start, end_date: t.end, address: t.address })
-      .eq("id", tripId);
+    const { error } = await supabaseServer().rpc("save_trip_settings", {
+      p_trip_id: tripId,
+      p_trip: s.trip,
+      p_remove: s.remove,
+      p_colors: s.colors,
+      p_add: s.add,
+      p_max: MAX_MEMBERS,
+    });
     throwIf(error);
+  }, {
+    "23503": "지출에 들어간 사람은 뺄 수 없어요. 그 지출을 먼저 고치거나 지워 주세요.",
+    "23505": "같은 이름이 이미 있어요. 구별되게 적어 주세요.",
+    NB001: `최대 ${MAX_MEMBERS}명까지 추가할 수 있어요.`,
   });
 }
 
@@ -131,29 +139,7 @@ export async function setTaker(slug: string, memberId: string | null): Promise<A
   }, { "23503": "없는 멤버예요. 화면을 새로 고쳐 주세요." });
 }
 
-// ---------------------------------------------------------------- 멤버
-
-export async function addMember(slug: string, rawName: string): Promise<ActionResult> {
-  return run(slug, async () => {
-    const name = check(memberNameSchema, rawName);
-    const tripId = await tripIdOf(slug);
-    // 동시에 추가해도 인원 제한·순서(sort_order = N빵 나머지 배분 순서)가 지켜지도록 DB 함수가 여행 행을 잠그고 처리한다
-    const { error } = await supabaseServer().rpc("add_member", { p_trip_id: tripId, p_name: name, p_max: MAX_MEMBERS });
-    throwIf(error);
-  }, {
-    "23505": "같은 이름이 이미 있어요. 구별되게 적어 주세요.",
-    NB001: `최대 ${MAX_MEMBERS}명까지 추가할 수 있어요.`,
-  });
-}
-
-export async function removeMember(slug: string, memberId: string): Promise<ActionResult> {
-  return run(slug, async () => {
-    const id = check(uuid, memberId);
-    const tripId = await tripIdOf(slug);
-    const { error } = await supabaseServer().from("members").delete().eq("id", id).eq("trip_id", tripId);
-    throwIf(error);
-  }, { "23503": "지출에 들어간 사람은 뺄 수 없어요. 그 지출을 먼저 고치거나 지워 주세요." });
-}
+// 멤버 추가·빼기·색은 saveSettings 로 (설정 화면 한 번에 저장)
 
 // ---------------------------------------------------------------- 지출
 

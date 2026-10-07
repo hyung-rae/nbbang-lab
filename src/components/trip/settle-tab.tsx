@@ -1,18 +1,27 @@
 "use client";
 
+import { Box, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { useState } from "react";
-import { toast } from "sonner";
+import classes from "@/components/list.module.css";
+import { toast } from "@/components/notify";
 import { settlementText } from "@/lib/domain/expense-view";
 import { won } from "@/lib/domain/format";
 import type { Settlement } from "@/lib/domain/settle";
 import type { CategoryRow } from "@/lib/domain/treemap";
 import type { Member, TripData } from "@/lib/domain/types";
 import { setTaker } from "@/lib/trips/actions";
-import { cn } from "@/lib/utils";
-import { Avatar, Chip, CopyFallback, SectionTitle, btnGhost, copyText, useAction } from "./parts";
+import { Avatar, Chip, CopyFallback, SectionTitle, copyText, useAction } from "./parts";
 import { Treemap } from "./treemap";
 
-const list = "overflow-hidden rounded-[14px] border border-border bg-card";
+function Note({ children }: { children: React.ReactNode }) {
+  return (
+    <Paper withBorder radius="lg" p="md">
+      <Text size="sm" c="dimmed">
+        {children}
+      </Text>
+    </Paper>
+  );
+}
 
 export function SettleTab({
   data,
@@ -29,34 +38,50 @@ export function SettleTab({
 
   return (
     <>
-      <section className="flex flex-col gap-2.5">
+      <Stack component="section" gap="sm">
         <SectionTitle>송금 정리</SectionTitle>
         {result.transfers.length ? (
           <>
-            <p className="-mt-1 text-[13px] text-muted-foreground">이대로 보내면 정산이 끝나요.</p>
-            <TakerCard data={data} result={result} />
-            <ol className={list}>
-              {result.transfers.map((t, i) => (
-                <li
-                  key={`${t.from}-${t.to}`}
-                  className={cn(
-                    "grid grid-cols-[minmax(0,1fr)_1.2em_minmax(0,1fr)_7.2em] items-center gap-2 px-3.5 py-3",
-                    i > 0 && "border-t border-border",
-                  )}
-                >
-                  <Who member={byId(t.from)} />
-                  <span className="text-center text-muted-foreground" aria-label="에게">
-                    →
-                  </span>
-                  <Who member={byId(t.to)} />
-                  <strong className="text-right font-semibold whitespace-nowrap tabular-nums">{won(t.amount)}</strong>
-                </li>
-              ))}
-            </ol>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={btnGhost}
+            <Text size="sm" c="dimmed" mt={-4}>
+              이대로 보내면 정산이 끝나요.
+            </Text>
+            {/* 덤탱이(화면 표기 "좀 더 착한 사람") 고르기 + 송금 목록을 한 카드로 — 바꾸면 바로 아래 금액이 바뀐다 */}
+            <Paper withBorder radius="lg" style={{ overflow: "hidden" }}>
+              <Taker data={data} result={result} />
+              <Box
+                component="ol"
+                className={classes.list}
+                style={result.taker ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined}
+              >
+                {result.transfers.map((t) => (
+                  <Box
+                    component="li"
+                    key={`${t.from}-${t.to}`}
+                    className={classes.row}
+                    px={14}
+                    py="sm"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0,1fr) 1.2em minmax(0,1fr) 7.2em",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Who member={byId(t.from)} />
+                    <Text span c="dimmed" ta="center" aria-label="에게">
+                      →
+                    </Text>
+                    <Who member={byId(t.to)} />
+                    <Text span fw={700} ta="right" style={{ whiteSpace: "nowrap" }}>
+                      {won(t.amount)}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
+            </Paper>
+            <Group>
+              <Button
+                variant="default"
                 onClick={async () => {
                   const text = settlementText(data.trip.name, members, result);
                   if (await copyText(text)) {
@@ -66,115 +91,115 @@ export function SettleTab({
                 }}
               >
                 정산 내용 복사
-              </button>
-            </div>
+              </Button>
+            </Group>
             {fallback && <CopyFallback id="settle-copy" text={fallback} label="복사할 정산 내용" />}
           </>
         ) : (
-          <p className={cn(list, "p-3.5 text-sm text-muted-foreground")}>
-            {result.total ? "모두 딱 맞게 냈어요. 보낼 돈이 없어요." : "아직 기록한 지출이 없어요."}
-          </p>
+          <Note>{result.total ? "모두 딱 맞게 냈어요. 보낼 돈이 없어요." : "아직 기록한 지출이 없어요."}</Note>
         )}
-      </section>
+      </Stack>
 
-      <section className="flex flex-col gap-2.5">
+      <Stack component="section" gap="sm">
         <SectionTitle>사람별</SectionTitle>
-        <p className="-mt-1 text-[13px] text-muted-foreground">
-          낸 돈은 직접 결제한 금액, 쓴 돈은 N빵으로 나눈 내 몫이에요. 100원 단위로 정리하고 남는 끝전은 덤탱이 쓸 사람
-          몫이에요.
-        </p>
-        <ul className={list}>
-          {members.map((m, i) => {
+        <Text size="sm" c="dimmed" mt={-4}>
+          낸 돈은 결제한 금액, 쓴 돈은 N빵한 내 몫이에요.
+        </Text>
+        <Paper component="ul" withBorder radius="lg" className={classes.list}>
+          {members.map((m) => {
             const b = result.bal[m.id];
+            const tone = b > 0 ? "teal" : b < 0 ? "red" : "dimmed";
             return (
-              <li key={m.id} className={cn("flex items-center gap-3 px-3.5 py-3", i > 0 && "border-t border-border")}>
+              <Group component="li" key={m.id} className={classes.row} gap="sm" px={14} py="sm" wrap="nowrap">
                 <Avatar member={m} />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-semibold">{m.name}</span>
-                  <span className="text-[12.5px] text-muted-foreground tabular-nums">
+                <Box flex={1} miw={0}>
+                  <Text fw={600}>{m.name}</Text>
+                  <Text size="xs" c="dimmed">
                     낸 돈 {won(result.paid[m.id])} · 쓴 돈 {won(result.owed[m.id])}
-                  </span>
-                </div>
-                <div
-                  className={cn(
-                    "flex flex-none flex-col items-end text-right",
-                    b > 0 ? "text-plus" : b < 0 ? "text-minus" : "text-muted-foreground",
-                  )}
-                >
-                  <strong className="tabular-nums">
+                  </Text>
+                </Box>
+                <Box ta="right" style={{ flex: "none" }}>
+                  <Text fw={700} c={tone}>
                     {b > 0 ? "+" : b < 0 ? "−" : ""}
                     {won(Math.abs(b))}
-                  </strong>
-                  <span className="text-xs">{b > 0 ? "받을 돈" : b < 0 ? "보낼 돈" : "정산 끝"}</span>
-                </div>
-              </li>
+                  </Text>
+                  <Text size="xs" c={tone}>
+                    {b > 0 ? "받을 돈" : b < 0 ? "보낼 돈" : "정산 끝"}
+                  </Text>
+                </Box>
+              </Group>
             );
           })}
-        </ul>
-      </section>
+        </Paper>
+      </Stack>
 
-      <section className="flex flex-col gap-2.5">
+      <Stack component="section" gap="sm">
         <SectionTitle>어디에 썼나</SectionTitle>
         {categories.length ? (
           <>
-            <p className="-mt-1 text-[13px] text-muted-foreground">
+            <Text size="sm" c="dimmed" mt={-4}>
               넓이가 쓴 돈에 비례해요. 칸이나 목록을 누르면 그 분류만 볼 수 있어요.
-            </p>
+            </Text>
             <Treemap rows={categories} total={result.total} />
           </>
         ) : (
-          <p className={cn(list, "p-3.5 text-sm text-muted-foreground")}>
-            지출을 기록하면 분류별로 얼마나 썼는지 보여요.
-          </p>
+          <Note>지출을 기록하면 분류별로 얼마나 썼는지 보여요.</Note>
         )}
-      </section>
+      </Stack>
     </>
   );
 }
 
 function Who({ member }: { member: Member | undefined }) {
   return (
-    <span className="flex min-w-0 items-center gap-2">
+    <Group gap={8} wrap="nowrap" miw={0}>
       <Avatar member={member} />
-      <span className="truncate font-semibold">{member?.name ?? "?"}</span>
-    </span>
+      <Text span fw={600} truncate>
+        {member?.name ?? "?"}
+      </Text>
+    </Group>
   );
 }
 
-function TakerCard({ data, result }: { data: TripData; result: Settlement }) {
+function Taker({ data, result }: { data: TripData; result: Settlement }) {
   const { pending, run } = useAction();
   if (!result.taker) return null;
   const explicit = data.takerId !== null && data.members.some((m) => m.id === data.takerId);
   return (
-    <div className="flex flex-col gap-2.5 rounded-[14px] border border-border bg-card p-3.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-[15px] font-semibold">덤탱이 쓸 사람</h3>
-        {result.takerCost > 0 && (
-          <span className="text-[13px] font-semibold whitespace-nowrap text-minus tabular-nums">
-            끝전 +{won(result.takerCost)}
-          </span>
-        )}
-      </div>
-      <p className="text-[12.5px] text-muted-foreground">
-        송금은 100원 단위로 끊고, 남는 끝전은 이 사람이 몰아서 내요.
-        {!explicit && " 정하지 않으면 가장 많이 받을 사람이 써요."}
-      </p>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="덤탱이 쓸 사람">
-        {data.members.map((m) => (
-          <Chip
-            key={m.id}
-            type="radio"
-            name="taker"
-            value={m.id}
-            checked={m.id === result.taker}
-            disabled={pending}
-            onChange={() => run(() => setTaker(data.slug, m.id), { success: `덤탱이는 ${m.name}` })}
-          >
-            <Avatar member={m} className="size-[26px] text-xs" />
-            {m.name}
-          </Chip>
-        ))}
-      </div>
-    </div>
+    <Box p="md">
+      <Stack gap="sm">
+        <Group justify="space-between" align="baseline" gap="xs">
+          <Title order={3} size="h5">
+            좀 더 착한 사람
+          </Title>
+          {result.takerCost > 0 && (
+            <Text size="sm" fw={600} c="red" style={{ whiteSpace: "nowrap" }}>
+              끝전 +{won(result.takerCost)}
+            </Text>
+          )}
+        </Group>
+        <Text size="xs" c="dimmed">
+          송금은 100원 단위로 끊고, 남는 끝전은 이 사람이 몰아서 내요.
+          {!explicit && " 정하지 않으면 가장 많이 받을 사람이 써요."}
+        </Text>
+        <Group gap="xs" role="radiogroup" aria-label="좀 더 착한 사람">
+          {data.members.map((m) => (
+            <Chip
+              key={m.id}
+              type="radio"
+              name="taker"
+              value={m.id}
+              checked={m.id === result.taker}
+              disabled={pending}
+              withCheck={false}
+              onChange={() => run(() => setTaker(data.slug, m.id), { success: `좀 더 착한 사람은 ${m.name}` })}
+            >
+              <Avatar member={m} size={26} />
+              {m.name}
+            </Chip>
+          ))}
+        </Group>
+      </Stack>
+    </Box>
   );
 }

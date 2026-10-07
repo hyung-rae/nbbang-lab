@@ -27,6 +27,7 @@
 - 나머지 1원 배분 순서는 `split` 배열 순서가 아니라 **멤버 순서**(`splitMembers`)다.
 - Server Action 은 화면 밖에서 POST 로도 불린다 → 인자는 타입을 믿지 말고 검증한다(slug 도 `unknown` 취급), 배열 입력에는 상한을 둔다.
   권한 검사가 생기면 `tripIdOf` 에 넣는다.
+- 설정 화면은 `saveSettings` 하나로 여행 정보·멤버 추가·빼기·색을 **한 트랜잭션**(DB 함수 `save_trip_settings`)에 저장한다. 멤버 개별 추가·빼기 액션은 없다.
 - 새 액션은 `run(slug, fn, dbMessages)` 로 감싼다 — 오류 문구 변환·`refresh()`·변경 신호가 여기서 일괄 처리된다.
 - "읽고 → 계산 → 넣기"(개수 제한, 다음 순서 번호)는 앱에서 하지 않고 DB 함수로 원자적으로 한다 (`supabase/CLAUDE.md`).
 - "오늘"은 `todayIn("Asia/Seoul")` — 서버(Vercel)가 UTC 라 그냥 `new Date()` 면 자정 전후 D-day 가 하루 어긋난다.

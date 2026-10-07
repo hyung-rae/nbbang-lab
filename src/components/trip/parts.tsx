@@ -1,118 +1,229 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type ComponentProps, type ReactNode } from "react";
-import { toast } from "sonner";
+import {
+  ActionIcon,
+  Avatar as MantineAvatar,
+  Box,
+  Button,
+  Chip as MantineChip,
+  Group,
+  Modal,
+  Stack,
+  Text,
+  Textarea,
+  Title,
+  type MantineColor,
+} from "@mantine/core";
+import { Trash2 } from "lucide-react";
+import { useEffect, useRef, useTransition, type ReactNode } from "react";
+import { toast } from "@/components/notify";
 import { categoryIndex } from "@/lib/domain/categories";
 import type { Member } from "@/lib/domain/types";
 import type { ActionResult } from "@/lib/trips/actions";
-import { cn } from "@/lib/utils";
 
-// Tailwind 는 클래스 이름을 정적으로 찾으므로 색 클래스는 목록으로 둔다
-const MEMBER_BG = ["bg-m0", "bg-m1", "bg-m2", "bg-m3", "bg-m4", "bg-m5"];
-const CATEGORY_BG = ["bg-cat-0", "bg-cat-1", "bg-cat-2", "bg-cat-3", "bg-cat-4", "bg-cat-5", "bg-cat-6"];
+// 멤버 12색·지출 분류 7색 → Mantine 팔레트 색 이름. 순서가 members.color(0~11, DB check)·CATEGORIES 와 1:1 이다
+// 앞 6색은 처음부터 쓰던 색이라 순서를 바꾸지 않는다 (바꾸면 기존 멤버 색이 바뀐다)
+export const MEMBER_COLORS: readonly MantineColor[] = [
+  "blue",
+  "red",
+  "violet",
+  "green",
+  "orange",
+  "pink",
+  "teal",
+  "indigo",
+  "lime",
+  "cyan",
+  "grape",
+  "yellow",
+];
+const CATEGORY_COLORS: readonly MantineColor[] = ["orange", "yellow", "blue", "teal", "violet", "pink", "gray"];
 
-export function memberBg(color: number) {
-  return MEMBER_BG[((color % 6) + 6) % 6];
+export function memberColor(color: number): MantineColor {
+  const n = MEMBER_COLORS.length;
+  return MEMBER_COLORS[((color % n) + n) % n];
 }
 
-export function categoryBg(category: string) {
-  return CATEGORY_BG[categoryIndex(category)];
+export function categoryColor(category: string): MantineColor {
+  return CATEGORY_COLORS[categoryIndex(category)];
 }
 
-export function Avatar({ member, className }: { member: Member | undefined; className?: string }) {
+/** 색 이름 → 칠할 CSS 값. style prop 에 "teal.filled" 를 넘기면 SSR 이 죽는다(Mantine 9) — CSS 변수로 쓴다 */
+export function filledColor(color: MantineColor): string {
+  return `var(--mantine-color-${color}-filled)`;
+}
+
+/** filledColor 위에 얹을 글자색. 노랑·라임은 흰 글자가 안 읽혀서 검정 */
+export function inkOn(color: MantineColor): string {
+  return color === "yellow" || color === "lime" ? "var(--mantine-color-black)" : "var(--mantine-color-white)";
+}
+
+export function Avatar({ member, size = 30 }: { member: Member | undefined; size?: number }) {
   if (!member) return null;
   return (
-    <span
+    <MantineAvatar
       aria-hidden
-      className={cn(
-        "grid size-[30px] flex-none place-items-center rounded-full text-[13px] leading-none font-semibold text-av-ink",
-        memberBg(member.color),
-        className,
-      )}
+      size={size}
+      radius="xl"
+      variant="filled"
+      color={memberColor(member.color)}
+      // 아바타 글자는 색과 상관없이 흰색 (2026-10-07 사용자 지시)
+      c="white"
+      styles={{ placeholder: { fontSize: Math.round(size * 0.44) } }}
     >
       {Array.from(member.name)[0] ?? "?"}
-    </span>
+    </MantineAvatar>
   );
 }
 
-export function CategoryDot({ category, className }: { category: string; className?: string }) {
-  return <span aria-hidden className={cn("size-2.5 flex-none rounded-full", categoryBg(category), className)} />;
+export function CategoryDot({ category, size = 10 }: { category: string; size?: number }) {
+  return (
+    <Box
+      component="span"
+      aria-hidden
+      display="inline-block"
+      w={size}
+      h={size}
+      bg={filledColor(categoryColor(category))}
+      style={{ flex: "none", borderRadius: "50%" }}
+    />
+  );
 }
 
-/** 라디오·체크박스 칩. 선택 상태는 색 + "✓" 로 같이 보여 준다 (명세 디자인 절) */
+/** 라디오·체크박스 칩. 선택 상태는 색 + 체크 표시로 같이 보여 준다 (명세 디자인 절). withCheck={false} 면 색으로만 */
 export function Chip({
   children,
-  className,
-  ...input
-}: ComponentProps<"input"> & { children: ReactNode }) {
+  checked,
+  onChange,
+  type = "checkbox",
+  name,
+  value,
+  disabled,
+  withCheck = true,
+}: {
+  children: ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  type?: "checkbox" | "radio";
+  name?: string;
+  value?: string;
+  disabled?: boolean;
+  withCheck?: boolean;
+}) {
   return (
-    <label
-      className={cn(
-        "relative inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-secondary py-0 pr-3 pl-1.5 font-medium select-none",
-        "has-[input:checked]:border-primary has-[input:checked]:bg-accent has-[input:checked]:text-accent-foreground",
-        "has-[input:checked]:after:text-xs has-[input:checked]:after:font-bold has-[input:checked]:after:content-['✓']",
-        "has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-primary",
-        "has-[input:disabled]:cursor-default has-[input:disabled]:opacity-60",
-        className,
-      )}
+    <MantineChip
+      variant="light"
+      type={type}
+      name={name}
+      value={value}
+      checked={checked}
+      onChange={onChange}
+      disabled={disabled}
+      icon={withCheck ? undefined : null}
+      // 아바타가 들어가도 잘리지 않게 높이는 내용에 맞춘다. Mantine 은 children 을 block span 으로 감싸므로 안쪽을 가로로 한 번 더 감싼다
+      // 체크 표시가 없으면 좌우 여백을 줄이고(왼쪽 아바타는 가장자리에 붙게), 선택돼도 그대로 둬 칩 폭이 바뀌지 않게
+      styles={{
+        label: {
+          height: "auto",
+          minHeight: "var(--chip-size)",
+          paddingBlock: 2,
+          ...(withCheck ? null : { paddingInlineStart: 4, paddingInlineEnd: 12 }),
+        },
+      }}
     >
-      <input {...input} className="pointer-events-none absolute opacity-0" />
-      {children}
-    </label>
+      <Group component="span" gap={6} wrap="nowrap">
+        {children}
+      </Group>
+    </MantineChip>
   );
 }
 
 export function SectionTitle({ children, count }: { children: ReactNode; count?: ReactNode }) {
   return (
-    <h2 className="m-0 flex items-baseline gap-2 font-heading text-[22px] leading-tight font-normal">
-      {children}
-      {count != null && <span className="font-sans text-[13px] text-muted-foreground">{count}</span>}
-    </h2>
+    <Group gap="xs" align="baseline">
+      <Title order={2} size="h3">
+        {children}
+      </Title>
+      {count != null && (
+        <Text size="sm" c="dimmed">
+          {count}
+        </Text>
+      )}
+    </Group>
   );
 }
 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2.5 rounded-[14px] border-[1.5px] border-dashed border-border px-5 py-10 text-center text-muted-foreground">
-      <p className="font-heading text-xl text-foreground">{title}</p>
+    <Stack
+      align="center"
+      gap="sm"
+      px="lg"
+      py={40}
+      ta="center"
+      c="dimmed"
+      style={{ border: "1.5px dashed var(--mantine-color-default-border)", borderRadius: "var(--mantine-radius-lg)" }}
+    >
+      <Title order={3} size="h4" c="var(--mantine-color-text)">
+        {title}
+      </Title>
       {children}
-    </div>
+    </Stack>
+  );
+}
+
+/** 휴지통 아이콘 버튼. 삭제·빼기는 모두 이 버튼 → DeleteConfirm(확인 창) 으로 한다 (2026-10-07 사용자 지시) */
+export function TrashButton({ label, disabled, onClick }: { label: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <ActionIcon
+      variant="subtle"
+      color="red"
+      size="input-sm"
+      radius="md"
+      aria-label={label}
+      title="삭제"
+      disabled={disabled}
+      style={{ flex: "none" }}
+      onClick={onClick}
+    >
+      <Trash2 aria-hidden size={18} />
+    </ActionIcon>
   );
 }
 
 /**
- * 위험 동작(삭제·빼기)은 두 번 눌러야 실행한다: 첫 클릭에 빨간 "한 번 더 누르면 …", 3초 뒤 원래대로.
- * 아티팩트판은 confirm() 이 막혀서 택한 방식이지만 폰에서 실수 방지에 좋아 그대로 쓴다.
+ * 삭제 확인 창. 실수로 Enter 를 눌러도 지워지지 않게 처음 포커스는 취소에 둔다.
+ * 닫히는 동안에도 문구가 남도록 부르는 쪽은 대상과 opened 를 따로 들고 있는다.
  */
-export function ArmedButton({
-  armedLabel,
-  onConfirm,
-  className,
+export function DeleteConfirm({
+  opened,
+  title,
   children,
-  ...props
-}: Omit<ComponentProps<"button">, "onClick"> & { armedLabel: string; onConfirm: () => void }) {
-  const [armed, setArmed] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  confirmLabel = "삭제",
+  loading,
+  onClose,
+  onConfirm,
+}: {
+  opened: boolean;
+  title: string;
+  children: ReactNode;
+  confirmLabel?: string;
+  loading?: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
   return (
-    <button
-      type="button"
-      {...props}
-      data-armed={armed || undefined}
-      className={cn(className, "data-armed:border-minus data-armed:bg-minus data-armed:text-on-danger")}
-      onClick={() => {
-        if (armed) {
-          clearTimeout(timer.current);
-          setArmed(false);
-          onConfirm();
-          return;
-        }
-        setArmed(true);
-        timer.current = setTimeout(() => setArmed(false), 3000);
-      }}
-    >
-      {armed ? armedLabel : children}
-    </button>
+    <Modal opened={opened} onClose={onClose} title={title} centered radius="lg" closeButtonProps={{ "aria-label": "닫기" }}>
+      <Text size="sm">{children}</Text>
+      <Group justify="flex-end" gap="xs" mt="lg">
+        <Button variant="default" data-autofocus onClick={onClose}>
+          취소
+        </Button>
+        <Button color="red" loading={loading} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </Group>
+    </Modal>
   );
 }
 
@@ -130,22 +241,12 @@ export function CopyFallback({ id, text, label }: { id: string; text: string; la
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => ref.current?.select(), [text]);
   return (
-    <>
-      <label className="sr-only" htmlFor={id}>
-        {label}
-      </label>
-      <textarea
-        ref={ref}
-        id={id}
-        readOnly
-        rows={6}
-        value={text}
-        className="w-full resize-y rounded-[10px] border border-border bg-secondary p-2.5 text-sm"
-      />
-      <p className="text-[12.5px] text-muted-foreground">
+    <Stack gap={6}>
+      <Textarea ref={ref} id={id} aria-label={label} readOnly autosize minRows={4} maxRows={10} value={text} />
+      <Text size="xs" c="dimmed">
         자동 복사가 안 되는 화면이라 내용을 선택해 뒀어요. 길게 눌러 복사하세요.
-      </p>
-    </>
+      </Text>
+    </Stack>
   );
 }
 
@@ -167,13 +268,3 @@ export function useAction() {
   }
   return { pending, run };
 }
-
-export const fieldClass =
-  "w-full min-w-0 min-h-[46px] rounded-[10px] border border-border bg-secondary px-3 outline-none focus:border-primary focus:ring-3 focus:ring-accent";
-export const labelClass = "text-[13px] font-semibold text-muted-foreground";
-export const btnPrimary =
-  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 font-semibold whitespace-nowrap text-primary-foreground disabled:opacity-60";
-export const btnGhost =
-  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 font-semibold whitespace-nowrap disabled:opacity-60";
-export const btnText =
-  "min-h-10 rounded-lg px-2.5 font-semibold whitespace-nowrap text-muted-foreground disabled:opacity-60";

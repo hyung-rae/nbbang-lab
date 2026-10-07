@@ -1,0 +1,8 @@
+/*
+ * 하단 탭바·지출 추가 버튼 위에 뜨도록 올린다.
+ * Mantine 은 위치마다 컨테이너를 따로 그리므로 style 로 bottom 을 주면 top-center 컨테이너까지
+ * 위아래로 늘어나 화면 가운데 클릭을 가로챈다(실측) — bottom-center 에만 준다.
+ */
+.root[data-position="bottom-center"] {
+  bottom: 150px;
+}

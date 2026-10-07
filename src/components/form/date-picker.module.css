@@ -1,0 +1,5 @@
+/* 여행 기간에 속한 날 (고른 날은 원래 색을 둔다) */
+.trip:not([data-selected]) {
+  font-weight: 700;
+  color: var(--mantine-primary-color-filled);
+}

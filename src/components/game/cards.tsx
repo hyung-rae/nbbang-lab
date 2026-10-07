@@ -1,9 +1,10 @@
 "use client";
 
+import { Text, UnstyledButton } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
 import { secureRandInt, shuffle } from "@/lib/domain/game";
 import type { Member } from "@/lib/domain/types";
-import { cn } from "@/lib/utils";
+import classes from "./game.module.css";
 import { GameDesc } from "./shared";
 
 /** 카드 뽑기 — 섞인 순서대로 한 장씩, 당첨 카드를 뒤집은 사람이 당첨. 마지막 한 장은 자동 */
@@ -62,47 +63,43 @@ export function Cards({ players, locked, onWin }: { players: Member[]; locked: b
           순서: {deck.order.map(name).join(" → ")}
         </GameDesc>
       )}
-      <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2">
+      <div className={classes.cards}>
         {open.map((by, j) => {
           const hit = j === deck.prize;
-          const base =
-            "flex aspect-[3/4] flex-col items-center justify-center gap-1 rounded-xl border p-1.5 font-heading leading-tight disabled:cursor-default";
           if (by) {
             return (
-              <button
+              <UnstyledButton
                 key={j}
-                type="button"
                 disabled
-                className={cn(
-                  base,
-                  "text-[19px]",
-                  hit ? "border-minus bg-minus text-on-danger" : "border-border bg-secondary text-foreground",
-                  j === just && "animate-flip",
-                )}
+                className={j === just ? `${classes.card} ${classes.flip}` : classes.card}
+                data-open
+                data-hit={hit || undefined}
               >
                 {hit ? "당첨" : "통과"}
-                <small className="max-w-full truncate font-sans text-xs font-semibold">{name(by)}</small>
-              </button>
+                <Text span size="xs" fw={600} truncate maw="100%" c="inherit">
+                  {name(by)}
+                </Text>
+              </UnstyledButton>
             );
           }
           if (locked) {
             return (
-              <button key={j} type="button" disabled className={cn(base, "border-border bg-secondary text-[19px] text-muted-foreground")}>
+              <UnstyledButton key={j} disabled className={classes.card}>
                 통과
-              </button>
+              </UnstyledButton>
             );
           }
           return (
-            <button
+            <UnstyledButton
               key={j}
-              type="button"
               aria-label={`${j + 1}번 카드 뒤집기`}
               disabled={auto}
               onClick={() => pick(j)}
-              className={cn(base, "border-primary bg-primary text-[30px] text-primary-foreground shadow-app-sm")}
+              className={classes.card}
+              data-back
             >
               ?
-            </button>
+            </UnstyledButton>
           );
         })}
       </div>

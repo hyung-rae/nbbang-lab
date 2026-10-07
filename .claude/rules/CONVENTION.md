@@ -32,7 +32,9 @@ summary: nbbang-lab 협업·코드 컨벤션
 
 ## 화면 · 데이터
 
-- **날짜·선택 입력은 shadcn 기반 부품(`src/components/form/`)을 쓴다.** 브라우저 기본 `<input type="date">`·`<select>` 는 쓰지 않는다 (사용자 지시 2026-10-06).
+- **화면은 Mantine 컴포넌트로 만든다** (2026-10-07 사용자 결정: 기본 테마 기반, teal). 직접 그리는 부분만 같은 폴더 `*.module.css` 에 Mantine 변수로 — Tailwind·인라인 색 값을 새로 들이지 않는다.
+- **모든 삭제·빼기는 확인 창(`DeleteConfirm`)을 거친다** (사용자 지시 2026-10-07). 목록 줄은 휴지통 아이콘(`TrashButton`), 지출 고치기 시트는 [삭제하기] 버튼에서 연다. 두 번 누르기·바로 삭제는 쓰지 않는다.
+- **날짜·선택 입력은 `src/components/form/` 의 Mantine 기반 부품을 쓴다.** 브라우저 기본 `<input type="date">`·`<select>` 는 쓰지 않는다 (사용자 지시 2026-10-06).
 - **폼은 다른 화면의 변경(실시간 갱신)으로 props 가 바뀌어도 남의 변경을 덮어쓰거나 지워진 대상을 되살리지 않게 만든다.** 패턴은 [`src/components/CLAUDE.md`](../../src/components/CLAUDE.md).
 - **개수 제한·다음 순서 번호처럼 "읽고 → 계산 → 넣기"가 필요한 변경은 DB 함수로 원자적으로 한다.** 패턴은 [`supabase/CLAUDE.md`](../../supabase/CLAUDE.md).
 - 새 DB 객체(테이블·함수·뷰)는 같은 마이그레이션에서 `anon`·`authenticated` 권한을 회수하고 스키마 테스트에 권한 케이스를 추가한다.

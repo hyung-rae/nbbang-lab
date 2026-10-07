@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Alert, Box, Button, Drawer, Group, SimpleGrid, Stack, Text, TextInput } from "@mantine/core";
+import { useEffect, useState } from "react";
 import { DatePicker } from "@/components/form/date-picker";
 import { OptionSelect } from "@/components/form/option-select";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { CATEGORIES, type Category } from "@/lib/domain/categories";
 import type { Expense, TripData } from "@/lib/domain/types";
 import { deleteExpense, saveExpense } from "@/lib/trips/actions";
 import { expenseSchema, firstError } from "@/lib/trips/schema";
-import { cn } from "@/lib/utils";
-import { ArmedButton, Avatar, CategoryDot, Chip, btnGhost, btnPrimary, btnText, fieldClass, labelClass, useAction } from "./parts";
+import { Avatar, CategoryDot, Chip, DeleteConfirm, useAction } from "./parts";
 
 export type SheetState =
   | { open: false }
@@ -34,21 +33,49 @@ export function ExpenseSheet({
   onClose: () => void;
   onSaved: (date: string, payerId: string) => void;
 }) {
+  // 삭제 확인 창이 떠 있는 동안에는 시트가 Esc·바깥 누르기로 같이 닫히지 않게 (Mantine 은 열린 창마다 Esc 를 따로 듣는다)
+  const [confirming, setConfirming] = useState(false);
+  // 닫히는 전환 동안에도 마지막으로 연 내용(제목·폼)을 그대로 보여 준다 — props 가 바뀔 때 상태를 맞추는 렌더 중 갱신
+  const [lastOpen, setLastOpen] = useState<Extract<SheetState, { open: true }> | null>(null);
+  if (state.open && lastOpen !== state) setLastOpen(state);
+  const view = state.open ? state : lastOpen;
   return (
-    <Drawer open={state.open} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="mx-auto max-w-[36rem]">
-        {state.open && (
-          <SheetForm
-            key={state.expenseId ?? "new"}
-            data={data}
-            editingId={state.expenseId}
-            preset={state.preset}
-            defaults={defaults}
-            onClose={onClose}
-            onSaved={onSaved}
-          />
-        )}
-      </DrawerContent>
+    <Drawer
+      opened={state.open}
+      onClose={onClose}
+      closeButtonProps={{ "aria-label": "닫기" }}
+      closeOnEscape={!confirming}
+      closeOnClickOutside={!confirming}
+      position="bottom"
+      size="auto"
+      title={view?.expenseId ? "지출 고치기" : "지출 추가"}
+      // 폰 폭 기준 가운데 36rem, 위쪽만 둥글게. 끌어내려 닫기는 없다 — 바깥 누르기·X·Esc 로 닫힌다
+      styles={{
+        // size="auto" 여도 아래쪽 시트가 화면 높이까지 늘어난다 → 내용 높이로
+        content: {
+          flex: "0 0 auto",
+          height: "auto",
+          maxWidth: "36rem",
+          maxHeight: "92dvh",
+          marginInline: "auto",
+          borderRadius: "var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0",
+        },
+        title: { fontSize: "var(--mantine-h3-font-size)", fontWeight: 700 },
+      }}
+    >
+      {view && (
+        <SheetForm
+          key={view.expenseId ?? "new"}
+          data={data}
+          editingId={view.expenseId}
+          preset={view.preset}
+          defaults={defaults}
+          onClose={onClose}
+          onSaved={onSaved}
+          onConfirmingChange={setConfirming}
+          open={state.open}
+        />
+      )}
     </Drawer>
   );
 }
@@ -66,6 +93,8 @@ function SheetForm({
   defaults,
   onClose,
   onSaved,
+  onConfirmingChange,
+  open,
 }: {
   data: TripData;
   editingId: string | null;
@@ -73,6 +102,9 @@ function SheetForm({
   defaults: SheetDefaults;
   onClose: () => void;
   onSaved: (date: string, payerId: string) => void;
+  onConfirmingChange: (open: boolean) => void;
+  /** false = 닫히는 전환 중. 방금 지운 지출이 사라졌다는 안내를 이때 띄우지 않는다 */
+  open: boolean;
 }) {
   const { members, slug } = data;
   const isEdit = editingId !== null;
@@ -90,6 +122,15 @@ function SheetForm({
   // null = 아직 안 건드림 → 지금 멤버 전원
   const [pickedSplit, setSplit] = useState<string[] | null>(initial?.split ?? preset?.split ?? null);
   const [error, setError] = useState("");
+  const [confirmOpen, setConfirmOpenState] = useState(false);
+  // 확인 창 문구·대상은 연 순간의 지출로 고정 — 창이 떠 있는 동안 다른 곳에서 지워져도 창이 사라지지 않고 정상적으로 닫힌다
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  // 폼이 빠지면(시트 닫힘·다른 지출로 바뀜) 바깥 시트의 "확인 중" 표시도 푼다 — 남으면 시트가 Esc 로 안 닫힌다 (코드 리뷰)
+  useEffect(() => () => onConfirmingChange(false), [onConfirmingChange]);
+  const setConfirmOpen = (open: boolean) => {
+    setConfirmOpenState(open);
+    onConfirmingChange(open);
+  };
   const { pending, run } = useAction();
 
   const memberIds = new Set(members.map((m) => m.id));
@@ -119,152 +160,151 @@ function SheetForm({
   return (
     <form
       noValidate
-      className="flex flex-col gap-4 overflow-y-auto overscroll-contain px-4 pt-2.5 pb-[calc(16px+env(safe-area-inset-bottom))]"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <div aria-hidden className="mx-auto h-1 w-10 rounded-sm bg-border" />
-      <div className="flex items-center justify-between gap-2">
-        <DrawerTitle className="font-heading text-2xl font-normal">{isEdit ? "지출 고치기" : "지출 추가"}</DrawerTitle>
-        <button type="button" className={btnText} onClick={onClose}>
-          닫기
-        </button>
-      </div>
+      <Stack gap="md" pb="calc(8px + env(safe-area-inset-bottom))">
+        <TextInput
+          id="f-amount"
+          label="금액"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="0"
+          // Drawer 가 열리며 data-autofocus 칸으로 포커스를 옮긴다 (없으면 닫기 버튼)
+          data-autofocus={!isEdit || undefined}
+          value={amount}
+          onChange={(e) => {
+            const n = Number(e.currentTarget.value.replace(/\D/g, "").slice(0, 10)) || 0;
+            setAmount(n ? n.toLocaleString("ko-KR") : "");
+          }}
+          rightSection={<Text c="dimmed">원</Text>}
+          styles={{ input: { height: 54, textAlign: "right", fontSize: 26, fontWeight: 700 } }}
+        />
 
-      <label className="flex flex-col gap-1.5" htmlFor="f-amount">
-        <span className={labelClass}>금액</span>
-        <span className="relative">
-          <input
-            id="f-amount"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="0"
-            autoFocus={!isEdit}
-            value={amount}
-            onChange={(e) => {
-              const n = Number(e.target.value.replace(/\D/g, "").slice(0, 10)) || 0;
-              setAmount(n ? n.toLocaleString("ko-KR") : "");
-            }}
-            className={cn(fieldClass, "min-h-[54px] pr-10 text-right font-heading text-[26px]! tabular-nums")}
-          />
-          <span className="absolute top-1/2 right-3.5 -translate-y-1/2 text-muted-foreground">원</span>
-        </span>
-      </label>
-
-      <label className="flex flex-col gap-1.5" htmlFor="f-title">
-        <span className={labelClass}>내용</span>
-        <input
+        <TextInput
           id="f-title"
+          label="내용"
           maxLength={40}
           autoComplete="off"
           placeholder="예: 흑돼지 저녁"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className={fieldClass}
+          onChange={(e) => setTitle(e.currentTarget.value)}
         />
-      </label>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label className={labelClass} htmlFor="f-date">
-            날짜
-          </label>
-          <DatePicker id="f-date" value={date} onChange={setDate} trip={data.trip} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className={labelClass} htmlFor="f-category">
-            분류
-          </label>
+        <SimpleGrid cols={2} spacing="sm">
+          <DatePicker id="f-date" label="날짜" value={date} onChange={setDate} trip={data.trip} />
           <OptionSelect
             id="f-category"
+            label="분류"
             value={category}
             options={CATEGORIES}
             onChange={setCategory}
-            renderOption={(c) => (
-              <span className="flex items-center gap-2">
-                <CategoryDot category={c} />
-                {c}
-              </span>
-            )}
+            icon={(c) => <CategoryDot category={c} />}
           />
-        </div>
-      </div>
+        </SimpleGrid>
 
-      <fieldset className="flex flex-col gap-1.5">
-        <legend className={cn(labelClass, "mb-1.5")}>결제한 사람</legend>
-        <div className="flex flex-wrap gap-2">
-          {members.map((m) => (
-            <Chip key={m.id} type="radio" name="f-payer" checked={payerId === m.id} onChange={() => setPayerId(m.id)}>
-              <Avatar member={m} className="size-[26px] text-xs" />
-              {m.name}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
+        <Box component="fieldset" m={0} p={0} style={{ border: 0 }}>
+          <Text component="legend" fw={500} mb={6}>
+            결제한 사람
+          </Text>
+          <Group gap="xs">
+            {members.map((m) => (
+              <Chip
+                key={m.id}
+                type="radio"
+                name="f-payer"
+                checked={payerId === m.id}
+                withCheck={false}
+                onChange={() => setPayerId(m.id)}
+              >
+                <Avatar member={m} size={26} />
+                {m.name}
+              </Chip>
+            ))}
+          </Group>
+        </Box>
 
-      <fieldset className="flex flex-col gap-1.5">
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <legend className={labelClass}>같이 나눌 사람</legend>
-          <button
-            type="button"
-            className={cn(btnText, "min-h-8")}
-            onClick={() => setSplit(split.length === members.length ? [] : members.map((m) => m.id))}
-          >
-            전체 선택/해제
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {members.map((m) => (
-            <Chip
-              key={m.id}
-              type="checkbox"
-              name="f-split"
-              checked={split.includes(m.id)}
-              onChange={(e) =>
-                setSplit(e.target.checked ? [...split, m.id] : split.filter((id) => id !== m.id))
-              }
-            >
-              <Avatar member={m} className="size-[26px] text-xs" />
-              {m.name}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
+        <Box component="fieldset" m={0} p={0} style={{ border: 0 }}>
+          <Text component="legend" fw={500} mb={6}>
+            같이 나눌 사람
+          </Text>
+          <Group gap="xs">
+            {members.map((m) => (
+              <Chip
+                key={m.id}
+                type="checkbox"
+                name="f-split"
+                checked={split.includes(m.id)}
+                withCheck={false}
+                onChange={(on) => setSplit(on ? [...split, m.id] : split.filter((id) => id !== m.id))}
+              >
+                <Avatar member={m} size={26} />
+                {m.name}
+              </Chip>
+            ))}
+          </Group>
+        </Box>
 
-      {gone && (
-        <p role="alert" className="rounded-xl bg-sun-soft px-3.5 py-3 text-[13.5px]">
-          다른 곳에서 이 지출이 지워졌어요. 저장할 수 없으니 닫아 주세요.
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="text-[13px] font-medium text-minus">
-          {error}
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        {editing && !gone && (
-          <ArmedButton
-            armedLabel="한 번 더 누르면 삭제"
-            disabled={pending}
-            className={cn(btnGhost, "border-minus text-minus")}
-            onConfirm={() =>
-              run(() => deleteExpense(slug, editing.id), { success: "지웠어요", onSuccess: onClose, onError: setError })
-            }
-          >
-            삭제
-          </ArmedButton>
+        {gone && open && (
+          <Alert role="alert" color="yellow" variant="light">
+            다른 곳에서 이 지출이 지워졌어요. 저장할 수 없으니 닫아 주세요.
+          </Alert>
         )}
-        <span className="flex-1" />
-        <button type="button" className={btnGhost} onClick={onClose}>
-          취소
-        </button>
-        <button type="submit" className={btnPrimary} disabled={pending || gone}>
-          {pending ? "저장 중…" : isEdit ? "고치기" : "추가"}
-        </button>
-      </div>
+        {error && (
+          <Text role="alert" size="sm" c="red" fw={500}>
+            {error}
+          </Text>
+        )}
+
+        {/* 고치기: [삭제하기][고치기] (닫기는 위 X) · 추가: [취소][추가] — 2026-10-07 사용자 지시 */}
+        <Group gap="xs" pt={4} justify="flex-end">
+          {editing && !gone ? (
+            <Button
+              variant="light"
+              color="red"
+              disabled={pending}
+              onClick={() => {
+                setDeleteTarget({ id: editing.id, title: editing.title });
+                setConfirmOpen(true);
+              }}
+            >
+              삭제하기
+            </Button>
+          ) : (
+            <Button variant="default" onClick={onClose}>
+              취소
+            </Button>
+          )}
+          <Button type="submit" loading={pending} disabled={gone}>
+            {isEdit ? "고치기" : "추가"}
+          </Button>
+        </Group>
+      </Stack>
+
+      <DeleteConfirm
+        opened={confirmOpen}
+        title="지출 삭제"
+        loading={pending}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          run(() => deleteExpense(slug, deleteTarget.id), {
+            success: "지웠어요",
+            onSuccess: () => {
+              setConfirmOpen(false);
+              onClose();
+            },
+            onError: (message) => {
+              setConfirmOpen(false);
+              setError(message);
+            },
+          });
+        }}
+      >
+        <strong>{deleteTarget?.title}</strong> 지출을 지울까요? 정산에서도 빠져요.
+      </DeleteConfirm>
     </form>
   );
 }

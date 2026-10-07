@@ -1,0 +1,54 @@
+.nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 100;
+  border-top: 1px solid var(--mantine-color-default-border);
+  background-color: var(--mantine-color-body);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.inner {
+  position: relative;
+  max-width: 36rem;
+  margin-inline: auto;
+  padding-inline: var(--mantine-spacing-sm);
+}
+
+.fab {
+  position: absolute;
+  right: var(--mantine-spacing-sm);
+  bottom: calc(100% + 14px);
+  box-shadow: var(--mantine-shadow-lg);
+}
+
+.tabs {
+  display: flex;
+  height: 62px;
+}
+
+.tab {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  font-size: clamp(12.5px, 3.5vw, 15px);
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+  color: var(--mantine-color-dimmed);
+
+  &[aria-selected="true"] {
+    color: var(--mantine-primary-color-filled);
+
+    /* 선택된 탭 위쪽 막대 */
+    &::before {
+      content: "";
+      position: absolute;
+      inset-inline: 32%;
+      top: 0;
+      height: 3px;
+      border-radius: 0 0 3px 3px;
+      background-color: var(--mantine-primary-color-filled);
+    }
+  }
+}

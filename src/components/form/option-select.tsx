@@ -1,46 +1,47 @@
 "use client";
 
+import { Group, Select } from "@mantine/core";
 import type { ReactNode } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
-/** 브라우저 기본 select 대신 shadcn Select. 옵션 값이 곧 화면 글자인 목록(분류 등)용 */
+/** 브라우저 기본 select 대신 Mantine Select. 옵션 값이 곧 화면 글자인 목록(분류 등)용. icon 은 목록과 입력칸 왼쪽에 함께 보인다 */
 export function OptionSelect<T extends string>({
   id,
+  label,
   value,
   options,
   onChange,
-  renderOption,
+  icon,
   className,
   "aria-label": ariaLabel,
 }: {
   id?: string;
+  label?: ReactNode;
   value: T;
   options: readonly T[];
   onChange: (value: T) => void;
-  renderOption?: (value: T) => ReactNode;
+  icon?: (value: T) => ReactNode;
   className?: string;
   "aria-label"?: string;
 }) {
   return (
-    <Select value={value} onValueChange={(v) => v && onChange(v as T)}>
-      <SelectTrigger
-        id={id}
-        aria-label={ariaLabel}
-        className={cn(
-          "h-auto! min-h-[46px] w-full min-w-0 rounded-[10px] border-border bg-secondary px-3 text-base focus-visible:border-primary focus-visible:ring-accent data-popup-open:border-primary",
-          className,
-        )}
-      >
-        <SelectValue>{(v: T) => (renderOption ? renderOption(v) : v)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o} value={o} className="min-h-10 text-base">
-            {renderOption ? renderOption(o) : o}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Select
+      id={id}
+      label={label}
+      aria-label={ariaLabel}
+      className={className}
+      data={options as readonly string[] as string[]}
+      value={value}
+      onChange={(v) => v && onChange(v as T)}
+      allowDeselect={false}
+      checkIconPosition="right"
+      leftSection={icon?.(value)}
+      renderOption={({ option }) => (
+        <Group gap="xs" wrap="nowrap">
+          {icon?.(option.value as T)}
+          {option.label}
+        </Group>
+      )}
+      comboboxProps={{ position: "bottom-start" }}
+    />
   );
 }

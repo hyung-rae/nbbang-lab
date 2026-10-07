@@ -1,131 +1,113 @@
 "use client";
 
+import { DatePickerInput } from "@mantine/dates";
+import "dayjs/locale/ko";
 import { CalendarDays } from "lucide-react";
-import { useState } from "react";
-import type { DateRange } from "react-day-picker";
-import { ko } from "react-day-picker/locale";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatDate, parseDate, toDateString } from "@/lib/domain/dates";
-import { cn } from "@/lib/utils";
+import { useRef, useState, type ReactNode } from "react";
+import classes from "./date-picker.module.css";
 
-// 브라우저 기본 date input 대신 shadcn Calendar + Popover. 값은 앱 전체와 같은 "YYYY-MM-DD" 문자열로 주고받는다.
+// 브라우저 기본 date input 대신 Mantine DatePickerInput. 값은 앱 전체와 같은 "YYYY-MM-DD" 문자열로 주고받는다
+// (Mantine 8+ 날짜 부품도 같은 문자열을 쓴다).
 
-export const pickerTriggerClass =
-  "flex w-full min-w-0 min-h-[46px] items-center gap-2 rounded-[10px] border border-border bg-secondary px-3 text-left outline-none focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-accent data-popup-open:border-primary";
+// 한국 달력 모양: 일요일 시작, "2026년 10월". 입력칸 글자는 formatDate() 와 같은 "10월 23일 (금)"
+const COMMON = {
+  locale: "ko",
+  valueFormat: "M월 D일 (dd)",
+  monthLabelFormat: "YYYY년 M월",
+  firstDayOfWeek: 0,
+  leftSection: <CalendarDays aria-hidden size={16} />,
+  popoverProps: { position: "bottom-start" },
+} as const;
 
-// 폰에서 누르기 쉽게 날짜 칸 40px
-const calendarClass = "[--cell-size:--spacing(10)] p-1";
-
-const toDate = (s: string | null | undefined) => (s ? parseDate(s) : undefined);
-
-/** 날짜 하나 고르기. trip 을 주면 여행 기간을 달력에 표시한다 */
+/** 날짜 하나 고르기. trip 을 주면 여행 기간을 달력에 굵게 표시한다 */
 export function DatePicker({
   id,
+  label,
   value,
   onChange,
   placeholder = "날짜 고르기",
   trip,
 }: {
   id?: string;
+  label?: ReactNode;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   trip?: { start: string | null; end: string | null };
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = toDate(value);
-  const range = trip?.start ? { from: parseDate(trip.start), to: parseDate(trip.end || trip.start) } : undefined;
+  const from = trip?.start ?? null;
+  const to = trip?.end || from;
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger id={id} className={pickerTriggerClass}>
-        <CalendarDays aria-hidden className="size-4 flex-none text-muted-foreground" />
-        <span className={cn("min-w-0 flex-1 truncate", !value && "text-muted-foreground")}>
-          {value ? formatDate(value) : placeholder}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
-        <Calendar
-          mode="single"
-          locale={ko}
-          className={calendarClass}
-          selected={selected}
-          defaultMonth={selected ?? range?.from}
-          modifiers={range ? { trip: range } : undefined}
-          modifiersClassNames={{ trip: "[&>button]:font-bold [&>button]:text-primary" }}
-          onSelect={(d) => {
-            if (!d) return;
-            onChange(toDateString(d));
-            setOpen(false);
-          }}
-        />
-        {range && <p className="px-3 pb-2.5 text-xs text-muted-foreground">초록 굵은 날짜가 여행 기간이에요.</p>}
-      </PopoverContent>
-    </Popover>
+    <DatePickerInput
+      {...COMMON}
+      id={id}
+      label={label}
+      placeholder={placeholder}
+      value={value || null}
+      onChange={(d) => d && onChange(d)}
+      defaultDate={value || from || undefined}
+      getDayProps={(d) => (from && to && d >= from && d <= to ? { className: classes.trip } : {})}
+    />
   );
 }
 
-/** 시작일~종료일 한 번에 고르기. 하루짜리 여행은 같은 날을 두 번 누른다 */
+/**
+ * 시작일~종료일 한 번에 고르기. 하루짜리 여행은 같은 날을 두 번 누르거나, 시작일만 누르고 닫는다.
+ * 첫 날짜를 누른 "고르는 중" 상태는 여기서만 들고, 두 날짜가 정해졌을 때만 부모에 알린다 —
+ * 첫 클릭에 end = start 로 올려 보내면 제어 값이 [d, d] 로 돌아와 범위 선택이 끝나 버린다(코드 리뷰: 하루짜리만 골라짐)
+ */
 export function DateRangePicker({
   id,
+  label,
   start,
   end,
   onChange,
 }: {
   id?: string;
+  label?: ReactNode;
   start: string;
   end: string;
   onChange: (start: string, end: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const from = toDate(start);
-  const to = toDate(end || start);
-  const label = start ? (end && end !== start ? `${formatDate(start)} – ${formatDate(end)}` : formatDate(start)) : "";
-
+  const [picking, setPicking] = useState<string | null>(null);
+  // Mantine 은 닫힐 때 popoverProps.onClose 를 부른 "다음" 반쪽 범위를 [null, null] 로 비운다(PickerInputBase handleClose).
+  // 그 비우기가 방금 저장한 하루짜리 여행을 지우지 않도록 닫히는 순간의 한 번만 무시한다
+  const closing = useRef(false);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger id={id} className={pickerTriggerClass}>
-        <CalendarDays aria-hidden className="size-4 flex-none text-muted-foreground" />
-        <span className={cn("min-w-0 flex-1 truncate", !label && "text-muted-foreground")}>
-          {label || "여행 날짜 고르기 (선택)"}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
-        <Calendar
-          mode="range"
-          locale={ko}
-          className={calendarClass}
-          selected={from ? ({ from, to } satisfies DateRange) : undefined}
-          defaultMonth={from}
-          onSelect={(r) => {
-            const s = r?.from ? toDateString(r.from) : "";
-            const e = r?.to ? toDateString(r.to) : s;
-            onChange(s, e);
-            if (r?.from && r?.to && r.from.getTime() !== r.to.getTime()) setOpen(false);
-          }}
-        />
-        <div className="flex items-center justify-between gap-2 px-3 pb-2.5">
-          <span className="text-xs text-muted-foreground">시작일과 종료일을 차례로 눌러요.</span>
-          <span className="flex gap-1">
-            {start && (
-              <button
-                type="button"
-                className="min-h-9 rounded-lg px-2.5 text-sm font-semibold text-muted-foreground"
-                onClick={() => onChange("", "")}
-              >
-                지우기
-              </button>
-            )}
-            <button
-              type="button"
-              className="min-h-9 rounded-lg px-2.5 text-sm font-semibold text-primary"
-              onClick={() => setOpen(false)}
-            >
-              완료
-            </button>
-          </span>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <DatePickerInput
+      {...COMMON}
+      id={id}
+      label={label}
+      type="range"
+      placeholder="여행 날짜 고르기 (선택)"
+      allowSingleDateInRange
+      clearable
+      value={picking ? [picking, null] : [start || null, end || start || null]}
+      onChange={([s, e]) => {
+        if (closing.current) {
+          closing.current = false;
+          if (!s && !e) return;
+        }
+        if (s && !e) {
+          setPicking(s);
+          return;
+        }
+        setPicking(null);
+        onChange(s ?? "", e ?? "");
+      }}
+      popoverProps={{
+        ...COMMON.popoverProps,
+        // 시작일만 고르고 닫으면 하루짜리 여행
+        onClose: () => {
+          if (picking) {
+            closing.current = true;
+            // 비우기는 같은 이벤트 안에서 바로 이어 온다 — 안 오면 다음 정상 변경을 막지 않게 곧 푼다
+            queueMicrotask(() => (closing.current = false));
+            onChange(picking, picking);
+          }
+          setPicking(null);
+        },
+      }}
+    />
   );
 }

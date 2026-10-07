@@ -1,0 +1,195 @@
+/* 몰빵 게임 공용 스타일 (아티팩트판 키프레임 그대로) */
+
+.picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-default-hover);
+  padding: 4px;
+}
+
+.pick {
+  display: flex;
+  min-height: 58px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: var(--mantine-radius-sm);
+  padding: 6px 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+
+  &[aria-pressed="true"] {
+    background-color: var(--mantine-color-body);
+    color: var(--mantine-primary-color-filled);
+    box-shadow: var(--mantine-shadow-xs);
+  }
+}
+
+.result {
+  position: relative;
+  scroll-margin-bottom: 150px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-lg);
+  background-color: var(--mantine-color-yellow-light);
+  padding: 24px var(--mantine-spacing-md) var(--mantine-spacing-md);
+  text-align: center;
+}
+
+.confetti {
+  position: absolute;
+  top: -14px;
+  width: 7px;
+  height: 12px;
+  border-radius: 2px;
+  animation: fall 1.7s ease-in forwards;
+}
+
+/* 사다리 */
+.ladderName {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-default-hover);
+  padding: 6px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.slot {
+  display: grid;
+  min-height: 36px;
+  place-items: center;
+  border: 1px dashed var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background-color: var(--mantine-color-default-hover);
+  font-weight: 700;
+  color: var(--mantine-color-dimmed);
+
+  &[data-shown] {
+    border-style: solid;
+    color: var(--mantine-color-text);
+  }
+  &[data-hit] {
+    border-color: var(--mantine-color-red-filled);
+    background-color: var(--mantine-color-red-filled);
+    color: var(--mantine-color-white);
+  }
+}
+
+/* 카드 */
+.cards {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  aspect-ratio: 3 / 4;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-default-hover);
+  padding: 6px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--mantine-color-dimmed);
+
+  &:disabled {
+    cursor: default;
+  }
+  &[data-open] {
+    color: var(--mantine-color-text);
+  }
+  &[data-hit] {
+    border-color: var(--mantine-color-red-filled);
+    background-color: var(--mantine-color-red-filled);
+    color: var(--mantine-color-white);
+  }
+  &[data-back] {
+    border-color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-primary-color-filled);
+    font-size: 30px;
+    color: var(--mantine-color-white);
+    box-shadow: var(--mantine-shadow-xs);
+  }
+}
+
+/* 폭탄 */
+.bomb {
+  display: block;
+  width: 150px;
+  height: 150px;
+}
+.bombBody {
+  fill: light-dark(var(--mantine-color-dark-6), var(--mantine-color-dark-3));
+}
+
+.wobble {
+  animation: wobble 0.45s ease-in-out infinite;
+}
+.spark {
+  animation: spark 0.25s steps(2) infinite;
+}
+.boom {
+  animation: boom 0.5s ease-out;
+}
+.flip {
+  animation: flip 0.35s ease-out;
+}
+
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.04);
+  }
+}
+@keyframes spark {
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes boom {
+  from {
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+}
+@keyframes flip {
+  from {
+    transform: perspective(400px) rotateY(90deg);
+  }
+}
+@keyframes fall {
+  to {
+    transform: translateY(280px) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+.desc strong {
+  color: var(--mantine-color-text);
+}

@@ -47,7 +47,7 @@ export function groupByDate(expenses: Expense[]): DayGroup[] {
 export function settlementText(tripName: string, members: Member[], r: Settlement): string {
   const name = (id: string) => members.find((m) => m.id === id)?.name ?? "?";
   const lines = [`[${tripName}] 정산`, `총 지출 ${won(r.total)}`];
-  if (r.taker) lines.push(`덤탱이 쓸 사람 ${name(r.taker)}${r.takerCost > 0 ? ` (끝전 +${won(r.takerCost)})` : ""}`);
+  if (r.taker) lines.push(`좀 더 착한 사람 ${name(r.taker)}${r.takerCost > 0 ? ` (끝전 +${won(r.takerCost)})` : ""}`);
   lines.push("");
   for (const t of r.transfers) lines.push(`${name(t.from)} → ${name(t.to)}  ${won(t.amount)}`);
   return lines.join("\n");

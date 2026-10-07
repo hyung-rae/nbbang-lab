@@ -1,0 +1,48 @@
+.box {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-default-hover);
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    height: 300px;
+  }
+}
+
+.cell {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-sm);
+  padding: 8px 9px;
+  text-align: left;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition: opacity 150ms;
+}
+
+.row {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.item {
+  transition: opacity 150ms;
+
+  & + & {
+    border-top: 1px solid var(--mantine-color-default-border);
+  }
+}
+
+.dim {
+  opacity: 0.3;
+}

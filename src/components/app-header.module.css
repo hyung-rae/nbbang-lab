@@ -1,0 +1,6 @@
+/* 검은 실루엣 아이콘이라 다크 모드에서는 반전 */
+.logo {
+  @mixin dark {
+    filter: invert(1);
+  }
+}

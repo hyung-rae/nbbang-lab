@@ -17,7 +17,7 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 | 영역 | 사용 |
 |---|---|
 | 프레임워크 | Next.js 16 (App Router, `cacheComponents` 끔), React 19, TypeScript |
-| UI | Tailwind 4, shadcn 4 `base-nova` (= **Base UI**, Radix 아님), lucide-react, sonner |
+| UI | Mantine 9 (`core`·`dates`·`notifications`, 기본 테마 + teal) + CSS Modules, lucide-react. 2026-10-07 Tailwind·shadcn 에서 전면 교체 — 체계·함정은 [src/components](src/components/CLAUDE.md) |
 | DB | Supabase Postgres — 서버에서 `@supabase/supabase-js` (secret key), 브라우저는 Realtime 신호만 |
 | 검증 | zod 4 (화면·Server Action 공용 `src/lib/trips/schema.ts`) |
 | 테스트 | Vitest 5, PGlite(마이그레이션 검증) |
@@ -40,7 +40,7 @@ npm run build
 
 ```
 src/app/            라우트 — / (새 여행) · /trips (목록) · /t/[slug] (여행 화면), 메타데이터·아이콘·manifest·robots
-src/components/     화면 — trip/(여행 화면 탭·시트) · game/ · form/(날짜·선택) · trips/ · home/ · ui/(shadcn 생성물)
+src/components/     화면 — trip/(여행 화면 탭·시트) · game/ · form/(날짜·선택) · trips/ · home/ · 공용 틀(page-shell·link-button·notify)
 src/lib/            도메인 순수 함수(domain/) · 서버 데이터 계층(trips/·supabase/·realtime/) · site.ts
 supabase/           마이그레이션 SQL · 스키마 테스트
 .github/workflows/  CI
