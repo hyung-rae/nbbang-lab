@@ -7,10 +7,10 @@ Claude 아티팩트로 먼저 만든 버전을 원형으로 삼아 웹앱으로 
 
 ## 1. 현재 상태
 
-- **MVP 동작 중 (로컬).** 여행 만들기·목록, 정산·지출·장보기·몰빵 게임·설정, 다른 화면 자동 갱신, 숙소 지금 날씨(NCP 지오코딩 + Open-Meteo).
+- **MVP 프로덕션 배포 중 (Vercel, 2026-10-07).** 여행 만들기·목록, 정산·지출·장보기·몰빵 게임·설정, 다른 화면 자동 갱신, 숙소 지금 날씨(NCP 지오코딩 + Open-Meteo), 음악 탭(YouTube 재생목록에서 곡 정보만).
 - **인증 없음 (의도된 결정, 2026-10-06).** 여행 링크(slug)를 아는 누구나 보고 입력한다. `/trips` 는 DB 전체 여행을 보여 준다(임시).
   로그인 작업 때 권한 검사(`src/lib/trips/actions.ts` `tripIdOf`)·여행 목록 범위·Realtime 채널을 함께 바꾼다.
-- 남은 일: 음악 탭(YouTube Data API v3 — 곡 정보만 표시), 아티팩트 실데이터 이관.
+- 남은 일: 네이버 로그인(인증). 아티팩트 실데이터 이관은 **하지 않는다**(2026-10-07 사용자 결정).
 
 ## 2. 기술 스택
 
@@ -40,8 +40,8 @@ npm run build
 
 ```
 src/app/            라우트 — / (새 여행) · /trips (목록) · /t/[slug] (여행 화면), 메타데이터·아이콘·manifest·robots
-src/components/     화면 — trip/(여행 화면 탭·시트) · game/ · form/(날짜·선택) · trips/ · home/ · 공용 틀(page-shell·link-button·notify)
-src/lib/            도메인 순수 함수(domain/) · 서버 데이터 계층(trips/·supabase/·realtime/) · site.ts
+src/components/     화면 — trip/(여행 화면 탭·시트) · game/ · music/ · form/(날짜·선택) · trips/ · home/ · 공용 틀(page-shell·link-button·notify)
+src/lib/            도메인 순수 함수(domain/) · 서버 데이터 계층(trips/·supabase/·realtime/) · 외부 API(weather/·music/) · site.ts
 supabase/           마이그레이션 SQL · 스키마 테스트
 .github/workflows/  CI
 ```
@@ -67,7 +67,7 @@ supabase/           마이그레이션 SQL · 스키마 테스트
 - **명세의 제약 상당수는 아티팩트 플랫폼 제약 때문이었다** — 웹앱에서는 아래처럼 바꿨다(2026-10-06 사용자 결정).
   - "입력은 소유자만" → 링크를 아는 누구나 입력 (인증은 추후)
   - "모아서 저장하고 공유"(저장 바·초안·rev) → 입력할 때마다 즉시 저장 + 다른 화면 자동 갱신
-  - "예보를 Claude가 넣어 줌·노래 목록 내장" → 숙소 **지금 날씨**(NCP Maps Geocoding + Open-Meteo, 여행일 예보는 안 함 — 2026-10-07), YouTube Data API v3 (미구현)
+  - "예보를 Claude가 넣어 줌·노래 목록 내장" → 숙소 **지금 날씨**(NCP Maps Geocoding + Open-Meteo, 여행일 예보는 안 함 — 2026-10-07), 노래는 YouTube Data API v3 재생목록 검색(내장 135곡 대신, 칩 2줄 — 2026-10-07)
   - **네이버는 날씨 오픈 API 가 없다.** 네이버는 주소 → 좌표(지오코딩)에만 쓰고, 날씨 데이터는 Open-Meteo 에서 받는다.
   - 반대로 **정산 규칙(1원 단위 N빵 → 100원 정리 → 최소 송금)은 제품 결정**이라 그대로 지킨다.
 - **아티팩트의 실데이터는 라이브 아티팩트 안에만 있다.** 이관할 때는 아티팩트를 읽어 `trip-data` JSON을 가져온다 — 로컬 파일로 아티팩트를 재발행하면 데이터가 덮어써진다.

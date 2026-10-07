@@ -14,6 +14,9 @@
 | `weather/open-meteo.ts` | 숙소 **지금 날씨**(Open-Meteo `current`, 키 없음). 첫 화면 5분 데이터 캐시, 새로고침은 `fresh`(no-store) | 서버 |
 | `weather/geocode.ts` | 숙소 주소 → 좌표 (NCP Maps Geocoding, `NAVER_MAPS_API_KEY_ID`·`_KEY`). 0건이면 `addressRegion` 으로 재시도 | 서버 |
 | `weather/actions.ts` | `refreshWeather(slug)` — 날씨 새로고침(읽기 전용 Server Action) | 서버 |
+| `music/chips.ts` · `songs.ts` | 음악 탭 칩(시대 5 × 테마 13 = 65칸)·검색어·캐시 키, 재생목록 영상 → 노래 거르기·뽑기 **순수 함수** | 어디서나 |
+| `music/youtube.ts` | YouTube 재생목록 검색 → 곡 목록 → 길이·채널 (`YOUTUBE_API_KEY`) | 서버 |
+| `music/actions.ts` | `getSongs({ era, theme })` — 칸 캐시(`music_cache`) 우선, 노래 후보 반환 | 서버 |
 | `realtime/` | 여행 변경 신호 채널 `trip:<slug>` / `changed` (`notify.ts` 는 서버 전용) | |
 | `site.ts` | 앱 이름("엔빵")·설명·사이트 주소 | |
 
@@ -39,6 +42,13 @@
 - 날씨는 Open-Meteo 현재 값이 **15분 간격**이라 새로고침해도 값이 그대로일 때가 많다 → 화면이 "새로 받았어요 · HH:MM 기준" 알림을 띄운다.
   Next 데이터 캐시는 만료 뒤 첫 요청에 옛 값을 주므로(stale-while-revalidate) 새로고침은 `revalidate` 가 아니라 `cache: "no-store"`.
 - `refreshWeather` 는 좌표를 인자로 받지 않고 slug 로 DB 에서 읽는다 — 아무 좌표나 조회해 주는 통로가 되지 않게. 인증 전이라 연타 제한은 없다(문제되면 여기서).
+- **음악은 재생목록 방식이다** — 영상 검색은 결과 대부분이 1~10시간 노래 모음이라 못 쓴다(2026-10-07 실측). `search(type=playlist)` 1회 → 상위 3개 재생목록의 곡 →
+  1분30초~8분·공식 음원(`… - Topic`) 우선·가수당 1곡. 공식 음원이 모자라면 일반 영상으로 보충하되 가수 칸은 비운다(채널 = 올린 사람). 제목은 엔티티 디코드만(YouTube 정책: 검색 결과 글자를 바꾸지 않는다).
+- **YouTube 쿼터: `search.list` 는 하루 100회 전용 한도**(나머지 호출은 1만 단위 공용). 그래서 검색 단위를 칩 칸(65개)으로 묶고 칸마다 7일 캐시 —
+  `getSongs` 는 칩 값만 받는다(칸 65개). 성공한 칸은 7일 동안 다시 안 부르고, **실패·빈 결과는 캐시하지 않는 대신 그 칸을 10분 쉰다**(실패가 매번 검색 한도를 쓰지 않게),
+  같은 칸 동시 요청은 하나로 묶는다 — 둘 다 서버 인스턴스 메모리라 완전한 상한은 아니다. 캐시 읽기가 실패하면 YouTube 로 가지 않는다.
+  API 가 실패하면 옛 캐시를 쓰되 **30일 넘은 값은 쓰지 않는다**(정책 III.E.4). 재생목록 3개 중 일부가 비공개·삭제여도 나머지로 간다.
+  거르는 규칙을 바꾸면 `cellKey` 판 번호를 올린다 — **개발 서버와 프로덕션이 같은 DB 캐시를 쓴다.**
 - 새 액션은 `run(slug, fn, dbMessages)` 로 감싼다 — 오류 문구 변환·`refresh()`·변경 신호가 여기서 일괄 처리된다.
 - "읽고 → 계산 → 넣기"(개수 제한, 다음 순서 번호)는 앱에서 하지 않고 DB 함수로 원자적으로 한다 (`supabase/CLAUDE.md`).
 - "오늘"은 `todayIn("Asia/Seoul")` — 서버(Vercel)가 UTC 라 그냥 `new Date()` 면 자정 전후 D-day 가 하루 어긋난다.

@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { GameTab } from "@/components/game/game-tab";
+import { MusicTab } from "@/components/music/music-tab";
 import { PageShell } from "@/components/page-shell";
 import { defaultExpenseDate } from "@/lib/domain/dates";
 import { settle } from "@/lib/domain/settle";
@@ -26,6 +27,7 @@ const TABS = [
   ["list", "지출 내역"],
   ["shop", "장보기"],
   ["game", "게임"],
+  ["music", "음악"],
   ["settings", "설정"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -65,6 +67,8 @@ export function TripApp({
         onRecordExpense={() => setSheet({ open: true, expenseId: null, preset: { title: "장보기", category: "식비" } })}
       />
     );
+  // 음악은 멤버와 무관해서 멤버가 없어도 보인다
+  else if (tab === "music") body = <MusicTab />;
   else if (noMembers)
     body = (
       <Empty title="함께 가는 사람이 아직 없어요">

@@ -9,6 +9,7 @@
 | `trip/*-tab.tsx`, `expense-sheet.tsx`, `ticket.tsx`, `treemap.tsx` | 탭별 화면, 지출 입력 시트(Mantine `Drawer` 아래쪽), 여행 티켓, 트리맵 |
 | `trip/ticket.tsx` 숙소 패널 | 주소 줄 + 오른쪽 아이콘 [주소 복사][네이버 지도][카카오맵], 둘째 줄 **지금 날씨**(`☁️ 흐림 18° · 체감 16°` / `HH:MM 기준 · Open-Meteo` / [↻]). 주소 없으면 패널째 숨김 |
 | `trip/use-live-updates.ts` | 다른 화면 변경 신호 구독 → `router.refresh()` (재연결·탭 다시 보일 때도) |
+| `music/music-tab.tsx` | 음악 탭 — 시대(선택)·테마(필수, 상황·장르 중 하나) 칩 → `getSongs` 후보 중 7곡, [다시 뽑기]는 화면에서만(재호출 없음). 제목 옆 YouTube 아이콘(출처), 곡 줄은 썸네일 + 제목 · 가수, **누르는 곳 없음**(사용자 결정). 저장 없음, 멤버 없어도 보임 |
 | `game/` | 몰빵 게임 — `game-tab`(미션·참가자·결과) + 룰렛·사다리·폭탄·카드 |
 | `form/` | `DatePicker`·`DateRangePicker`(Mantine `DatePickerInput`, `ko`·일요일 시작), `OptionSelect`(Mantine `Select`) |
 | `trips/`, `home/`, `app-header.tsx` | 여행 목록, 새 여행 폼, 공통 헤더 |
@@ -56,6 +57,9 @@
     위 창이 떠 있는 동안 아래 창에 `closeOnEscape={false}`·`closeOnClickOutside={false}` (`expense-sheet.tsx` `confirming`).
 - **티켓 날씨 줄은 서버가 기다리지 않고 넘긴 Promise 를 `<Suspense>` + `use()` 로 읽는다** (`page.tsx` → `TripApp` → `Ticket`).
   날씨가 늦어도 티켓·탭은 먼저 뜬다. 새로고침 값은 티켓 안 상태로 들고, 실시간 갱신으로 서버 값이 새로 오면 관측 시각이 더 최근인 쪽을 보여 준다(`newerWeather`).
+- 음악 탭 썸네일은 저장하지 않고 영상 id 로 주소를 만든다(`thumbUrl`). `next/image` **`unoptimized`** — 브라우저가 `i.ytimg.com` 에서 바로 받아
+  Vercel 이미지 최적화 한도를 쓰지 않고 `remotePatterns` 도 필요 없다.
+- 음악 탭 칩을 연달아 누르면 요청 번호(`useRef`)로 마지막 조건의 결과만 보여 주고, 캐시가 바로 와도 0.7초는 "노래 고르는 중…"을 보인다.
 - 지도 로고는 `public/brands/*-map.png`(사용자 제공 앱 아이콘, 144px) + `next/image`. **같은 파일 이름으로 덮어쓰면 next/image·브라우저 캐시가 옛 그림을 계속 낸다**(실측) — 로고를 바꿀 땐 이름을 바꾼다.
   Open-Meteo 는 CC BY 4.0 이라 출처를 화면 글자로 표기한다(기준 시각 옆 링크).
 - 브라우저 점검 함정: Chrome 탭이 **hidden**(`document.visibilityState`)이면 rAF·CSS 전환이 멈춘다. Mantine `Drawer`·`Popover` 는 전환이 rAF 라 **아예 안 열린 것처럼** 보이고,
